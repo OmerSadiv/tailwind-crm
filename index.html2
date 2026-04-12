@@ -6,7 +6,7 @@
 <title>Tailwind CRM</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
 <style>
-: root{
+:root{
   --bg:#07070e;--surf:#0f0f1a;--surf2:#161626;--surf3:#1d1d2e;
   --border:#22223a;--border2:#2e2e50;
   --accent:#7c6fff;--green:#00e5b0;--red:#ff6b6b;--yellow:#ffd166;--blue:#64b4ff;
@@ -42,7 +42,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);dis
 .card-title{font-size:10px;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);margin-bottom:14px;font-weight:600;}
 /* FORMS */
 input,select,textarea{width:100%;padding:9px 13px;background:var(--surf2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;transition:border 0.12s;}
-input: focus, select: focus,textarea: focus{border-color:var(--accent);}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);}
 select option{background:var(--surf2);}
 textarea{resize:vertical;min-height:72px;}
 label{font-size:11px;color:var(--muted);margin-bottom:3px;display:block;}
@@ -561,24 +561,24 @@ hr{border:none;border-top:1px solid var(--border);margin:16px 0;}
       box-shadow:0 4px 16px rgba(124,111,255,0.5);font-size:22px;
       display:flex;align-items:center;justify-content:center;
       text-decoration:none;transition:transform 0.2s;"
-    title="Open Claude to make changes."
-    onmouseover="this. style.transform='scale(1.1)'"
-    onmouseout="this. style.transform='scale(1)'">💬</a>
+    title="Open Claude to make changes"
+    onmouseover="this.style.transform='scale(1.1)'"
+    onmouseout="this.style.transform='scale(1)'">💬</a>
 </div>
 <script>
 // ============================================================
 // COMPANIES (static)
 // ============================================================
 let COMPANIES=[
-  {id:'limy',name:'Limy AI',category:'Agentic Web / AI Visibility', color:'#7c6fff', website: 'https://limy.ai',desc:'CDN-level infrastructure — identifies every AI agent interaction and connects prompts to revenue.',raised:'$10M Seed (Jan 2026)',investors:'Flybridge + a16z speedrun',clients:'AstraZeneca, Samsung, L\'Oréal, Amazon Prime Video, KIA, P&G',geo:['Global','USA','Europe'],commissionPct:30},
-  {id:'blings',name:'Blings',category:'Interactive Personalized Video', color:'#00e5b0', website: 'https://blings.io',desc:'AI-powered interactive personalized video for enterprise at scale.',raised:'—',investors:'—',clients:'Enterprise',geo:['USA','Israel','LATAM'],commissionPct:25},
-  {id:'cytrix',name:'Cytrix',category:'Agentic Cyber Pentesting', color:'#ff6b6b', website: 'https://cytrix.ai',desc:'Automated agentic cybersecurity pentesting. Continuous security validation.',raised:'—',investors:'—',clients:'Israel Discount Bank, Cellebrite, eToro',geo:['Israel','USA','Europe'],commissionPct:25},
+  {id:'limy',name:'Limy AI',category:'Agentic Web / AI Visibility',color:'#7c6fff',website:'https://limy.ai',desc:'CDN-level infrastructure — identifies every AI agent interaction and connects prompts to revenue.',raised:'$10M Seed (Jan 2026)',investors:'Flybridge + a16z speedrun',clients:'AstraZeneca, Samsung, L\'Oréal, Amazon Prime Video, KIA, P&G',geo:['Global','USA','Europe'],commissionPct:30},
+  {id:'blings',name:'Blings',category:'Interactive Personalized Video',color:'#00e5b0',website:'https://blings.io',desc:'AI-powered interactive personalized video for enterprise at scale.',raised:'—',investors:'—',clients:'Enterprise',geo:['USA','Israel','LATAM'],commissionPct:25},
+  {id:'cytrix',name:'Cytrix',category:'Agentic Cyber Pentesting',color:'#ff6b6b',website:'https://cytrix.ai',desc:'Automated agentic cybersecurity pentesting. Continuous security validation.',raised:'—',investors:'—',clients:'Israel Discount Bank, Cellebrite, eToro',geo:['Israel','USA','Europe'],commissionPct:25},
   {id:'visitt',name:'VISITT',category:'PropTech',color:'#ffd166',website:'https://visitt.io',desc:'Property tech for building operations and tenant experience.',raised:'—',investors:'—',clients:'Real estate operators',geo:['USA','Israel'],commissionPct:20},
   {id:'sency',name:'Sency AI',category:'Fitness Tech / AI',color:'#64b4ff',website:'https://sency.ai',desc:'AI-powered fitness and movement analysis using computer vision.',raised:'—',investors:'—',clients:'Fitness platforms',geo:['USA','Israel'],commissionPct:20},
   {id:'shavit',name:'Shavit Group',category:'Cyber / OSINT',color:'#ff9999',website:'https://shavit-group.com',desc:'Cyber intelligence and OSINT solutions.',raised:'—',investors:'—',clients:'Government, enterprise',geo:['Israel','Gulf'],commissionPct:20},
   {id:'solar',name:'Jessica Energy',category:'AgriTech / CleanTech',color:'#ffd166',website:'',desc:'Moving solar panels enabling agri-PV — dual land use for energy and crops.',raised:'—',investors:'—',clients:'Agriculture sector',geo:['Israel','Europe'],commissionPct:20},
   {id:'enabley',name:'Enabley',category:'LMS / KMS · Deskless Workforce',color:'#00e5b0',website:'https://enabley.io',desc:'Learning & Knowledge Management for deskless workers. Strong LATAM presence.',raised:'—',investors:'—',clients:'Enterprise, LATAM',geo:['LATAM','Israel','USA'],commissionPct:25},
-  {id:'repower',name:'RePower',category:'Industrial IoT / CleanTech', color:'#a8ff78', website:'https://repower.bio',desc:'Industrial NIR sensor for biogas plants — real-time feedstock analysis. Phase 1: North America (hardware), Phase 2: Europe (HaaS).',raised:'JNF Grant, PAPAYA Grant',investors:'—',clients:'Biogas plants — North America & Europe',geo:['USA','Europe','Israel'],commissionPct:20}
+  {id:'repower',name:'RePower',category:'Industrial IoT / CleanTech',color:'#a8ff78',website:'https://repower.bio',desc:'Industrial NIR sensor for biogas plants — real-time feedstock analysis. Phase 1: North America (hardware), Phase 2: Europe (HaaS).',raised:'JNF Grant, PAPAYA Grant',investors:'—',clients:'Biogas plants — North America & Europe',geo:['USA','Europe','Israel'],commissionPct:20}
 ];
 // Keep a reference to defaults for smartUpdate
 const COMPANIES_DEFAULTS=JSON.parse(JSON.stringify(COMPANIES));
@@ -1342,7 +1342,7 @@ function renderRevenue(){
     const myMonthly=payment*(myPct/100);
     const otherPartners=(c.partnerIds||[]).filter(pp=>!pidMatchesPerson(pp.pid,omer));
     const leadName=otherPartners.length?resolvePartnerName(otherPartners[0].pid):'Direct';
-    return{clientId:c.id,clientName:c.name, company:c.portfolioCo,coColor,stageDef,isSigned, payment,myPct,myMonthly,leadName};
+    return{clientId:c.id,clientName:c.name,company:c.portfolioCo,coColor,stageDef,isSigned,payment,myPct,myMonthly,leadName};
   }).filter(d=>d.myPct>0);
 
   deals.sort((a,b)=>(b.isSigned-a.isSigned)||b.myMonthly-a.myMonthly);
@@ -1376,7 +1376,7 @@ function renderRevenue(){
     ${pipelineDeals.length?`
       <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--accent);margin:${signedDeals.length?'20px':'0'} 0 10px;">🎯 Pipeline (${pipelineDeals.length})</div>
       ${pipelineDeals.map(d=>revenueRow(d)).join('')}`:''}
-    ${!deals. length?`<div style="text-align:center;padding:60px;color:var(--muted);">No deals yet — add clients in the <strong>Clients</strong> page and assign your % to see revenue here.</div>`:''}
+    ${!deals.length?`<div style="text-align:center;padding:60px;color:var(--muted);">No deals yet — add clients in the <strong>Clients</strong> page and assign your % to see revenue here.</div>`:''}
   `;
 }
 
@@ -1695,7 +1695,7 @@ function renderPeople(){
     return sortDir*String(va).localeCompare(String(vb),'he');
   });
   // Update sort icons
-  ['name', 'type',' company', 'status', 'strength'].forEach(c=>{
+  ['name','type','company','status','strength'].forEach(c=>{
     const el=document.getElementById('sort-'+c);
     if(el)el.textContent=c===sortCol?(sortDir===1?'↑':'↓'):'';
   });
@@ -1795,7 +1795,7 @@ function openPersonModal(id){
     <div class="msec">
       <div class="msec-title">Status vs Tailwind</div>
       <div class="stepper">
-        ${['initial', 'followup','prospects',' signed','hold'].map(s=>`<div class="step-btn${p.status===s?' cur '+sc(s):''}" onclick="quickStatus(${id},'${s}', this)">${sl(s)}</div>`).join('')}
+        ${['initial','followup','prospects','signed','hold'].map(s=>`<div class="step-btn${p.status===s?' cur '+sc(s):''}" onclick="quickStatus(${id},'${s}',this)">${sl(s)}</div>`).join('')}
       </div>
       <div class="prog-label"><span>Progress</span><span id="pp-${id}">${sp(p.status)}%</span></div>
       <div class="prog-bar"><div class="prog-fill" id="pb-${id}" style="width:${sp(p.status)}%"></div></div>
@@ -2076,7 +2076,7 @@ function renderClientCard(pid,co,clientName,idx,isSigned){
                 style="padding:10px 14px;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:8px;
                   color:${stage===s.id?s.color:'var(--text)'};
                   background:${stage===s.id?'rgba(255,255,255,0.05)':'transparent'};"
-                onmouseover="this. style.background='var(--surf3)'"
+                onmouseover="this.style.background='var(--surf3)'"
                 onmouseout="this.style.background='${stage===s.id?'rgba(255,255,255,0.05)':'transparent'}'">
                 ${s.icon} ${s.label}${stage===s.id?' ✓':''}
               </div>`).join('')}
@@ -2128,7 +2128,7 @@ function toggleStageDropdown(id){
 // Close all dropdowns when clicking outside
 document.addEventListener('click',function(e){
   const inDropdown=e.target.closest('[id^="stage-"],[id^="pact-"]');
-  const inBadge=e.target.closest('[id^=" badge-"]');
+  const inBadge=e.target.closest('[id^="badge-"]');
   if(!inDropdown&&!inBadge){
     document.querySelectorAll('[id^="stage-"],[id^="pact-"]').forEach(d=>d.style.display='none');
   }
@@ -2186,10 +2186,10 @@ function pidMatchesPerson(pid,person){
   if(!pid||!person)return false;
   const lc=String(pid).toLowerCase();
   if(lc==='omer')return person.name==='Omer Sadiv'||person.id===0;
-  if(lc==='rafael')return person. name.includes('Rafael Uston');
+  if(lc==='rafael')return person.name.includes('Rafael Uston');
   if(lc==='patrick')return person.name==='Patrick';
-  if(lc==='rafa')return person. name.includes('Rafa Calderon');
-  if(lc==='atar')return person. name.includes('Atar');
+  if(lc==='rafa')return person.name.includes('Rafa Calderon');
+  if(lc==='atar')return person.name.includes('Atar');
   if(lc==='doron')return person.name==='Doron';
   return String(person.id)===String(pid);
 }
@@ -2656,7 +2656,7 @@ function renderDualRole(p){
   // No dual role — show picker
   return`<div style="font-size:12px;color:var(--muted);margin-bottom:8px;">This person has one role. Add a second role:</div>
     <div style="display:flex;gap:6px;flex-wrap:wrap;">
-      ${['partner', 'sub',' referrer', 'contact', 'client'].filter(t=>t!==p.type).map(t=>`
+      ${['partner','sub','referrer','contact','client'].filter(t=>t!==p.type).map(t=>`
         <button class="btn btn-ghost btn-xs" onclick="addDualRole(${p.id},'${t}')">+ ${tl(t)}</button>`).join('')}
     </div>`;
 }
@@ -2803,7 +2803,7 @@ async function sendFloatChat(){
   addFloatMsg(msg,'user');
   chatHistory.push({role:'user',content:msg});
   const loadId='fload-'+Date.now();
-  addFloatMsg('…',' ai loading',loadId);
+  addFloatMsg('…','ai loading',loadId);
   try{
     const res=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
@@ -2942,14 +2942,14 @@ function confirmAction(actionStr){
   if(action.action==='add_person'){
     PEOPLE.push({
       id:nextId++,
-      name: action.name,
-      type: action. type||'partner',
-      role: action.role||'—',
-      company: action. company||'—',
-      geo: action.geo||'—',
-      companies: action.companies||[],
+      name:action.name,
+      type:action.type||'partner',
+      role:action.role||'—',
+      company:action.company||'—',
+      geo:action.geo||'—',
+      companies:action.companies||[],
       strength:3,
-      status: action.status||'initial',
+      status:action.status||'initial',
       parentId:null,dualRole:null,
       companyStatus:{},clientsByCompany:{},potentialsByCompany:{},
       clientData:{},commissions:{},
@@ -2984,7 +2984,7 @@ function confirmAction(actionStr){
 
   // Replace card with success
   const card=document.querySelector('.action-card');
-  if(card)card. style.borderColor='var(--green)';
+  if(card)card.style.borderColor='var(--green)';
 }
 
 function addChatMsg(text,type,id){
