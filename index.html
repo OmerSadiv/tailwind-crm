@@ -363,6 +363,18 @@ hr{border:none;border-top:1px solid var(--border);margin:16px 0;}
 
 <main class="main">
 
+<!-- GLOBAL SEARCH -->
+<div style="position:sticky;top:0;z-index:100;background:var(--bg);padding:10px 0 8px;margin-bottom:4px;border-bottom:1px solid var(--border);">
+  <div style="position:relative;">
+    <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:14px;pointer-events:none;">🔍</span>
+    <input id="global-search" placeholder="Search anything — people, clients, companies…"
+      style="width:100%;padding:10px 16px 10px 38px;margin:0;font-size:13px;border-radius:10px;"
+      oninput="globalSearch(this.value)"
+      onkeydown="if(event.key==='Escape'){this.value='';closeGlobalSearch();}"/>
+  </div>
+  <div id="global-results" style="display:none;position:absolute;left:0;right:0;background:var(--surf);border:1px solid var(--border2);border-radius:12px;margin-top:4px;max-height:400px;overflow-y:auto;z-index:200;box-shadow:0 8px 32px rgba(0,0,0,0.4);"></div>
+</div>
+
 <!-- DASHBOARD -->
 <div class="page active" id="page-dashboard">
   <div class="page-title">Dashboard</div>
@@ -554,39 +566,16 @@ hr{border:none;border-top:1px solid var(--border);margin:16px 0;}
 </main>
 
 <!-- FLOATING AI ASSISTANT -->
-<div id="float-chat" style="position:fixed;bottom:24px;right:24px;z-index:1000;display:flex;flex-direction:column;align-items:flex-end;gap:10px;">
-
-  <!-- Chat Window -->
-  <div id="float-chat-window" style="display:none;width:360px;height:500px;background:var(--surf);border:1px solid var(--border2);border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,0.5);display:none;flex-direction:column;overflow:hidden;">
-    <!-- Header -->
-    <div style="padding:14px 16px;background:var(--surf2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
-      <div style="display:flex;align-items:center;gap:8px;">
-        <div style="width:8px;height:8px;border-radius:50%;background:#00e5b0;"></div>
-        <span style="font-weight:700;font-size:13px;">Tailwind AI</span>
-      </div>
-      <button onclick="toggleFloatChat()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;line-height:1;">×</button>
-    </div>
-    <!-- Messages -->
-    <div id="float-messages" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;">
-      <div class="chat-msg ai">Hi Omer! Ask me anything or tell me what to add — e.g. "Add John Smith, VP Sales at Cisco, partner for Cytrix"</div>
-    </div>
-    <!-- Input -->
-    <div style="padding:12px;border-top:1px solid var(--border);flex-shrink:0;display:flex;gap:8px;">
-      <textarea id="float-input" rows="2"
-        style="flex:1;resize:none;margin:0;font-size:12px;padding:8px 10px;border-radius:8px;"
-        placeholder="Ask or command…"
-        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendFloatChat();}"></textarea>
-      <button class="btn btn-primary btn-sm" style="align-self:flex-end;" onclick="sendFloatChat()">↵</button>
-    </div>
-  </div>
-
-  <!-- Toggle Button -->
-  <button id="float-btn" onclick="toggleFloatChat()"
-    style="width:52px;height:52px;border-radius:50%;background:var(--accent);border:none;cursor:pointer;
-      box-shadow:0 4px 16px rgba(124,111,255,0.5);font-size:22px;display:flex;align-items:center;
-      justify-content:center;transition:all 0.2s;"
+<!-- Claude Button — opens this conversation -->
+<div style="position:fixed;bottom:24px;right:24px;z-index:1000;">
+  <a href="https://claude.ai" target="_blank"
+    style="width:52px;height:52px;border-radius:50%;background:var(--accent);
+      box-shadow:0 4px 16px rgba(124,111,255,0.5);font-size:22px;
+      display:flex;align-items:center;justify-content:center;
+      text-decoration:none;transition:transform 0.2s;"
+    title="Open Claude to make changes"
     onmouseover="this.style.transform='scale(1.1)'"
-    onmouseout="this.style.transform='scale(1)'">💬</button>
+    onmouseout="this.style.transform='scale(1)'">💬</a>
 </div>
 <script>
 // ============================================================
@@ -615,7 +604,7 @@ const COMPANIES_DEFAULTS=JSON.parse(JSON.stringify(COMPANIES));
 // ============================================================
 const DEFAULTS=[
   {id:0,name:'Omer Sadiv',type:'partner',role:'Founder & BD Lead',company:'Tailwind',geo:'Israel',companies:['Limy AI','Blings','Cytrix','VISITT','Sency AI','Shavit Group','Enabley','RePower'],strength:5,status:'prospects',parentId:null,dualRole:null,companyStatus:{'Limy AI':'prospects','Blings':'prospects','Cytrix':'prospects','VISITT':'prospects','Sency AI':'prospects','Enabley':'prospects','RePower':'prospects'},clientsByCompany:{},potentialsByCompany:{},clientData:{},commissions:{},notes:'Tailwind founder. Manages all portfolio relationships. Ex-Pernod Ricard.'},
-  {id:1,name:'Patrick',type:'partner',role:'LATAM Distributor',company:'Independent',geo:'Brazil',companies:['Blings','Enabley'],strength:5,status:'prospects',parentId:null,companyStatus:{'Blings':'signed','Enabley':'prospects'},clientsByCompany:{'Blings':['Grupo Globo (Brazil)','Claro Brasil'],'Enabley':['Banco Itaú','Bradesco']},commissions:{'Blings':{1:20},'Enabley':{1:20}},notes:'Key Brazil distributor. First to validate LATAM model.'},
+  {id:1,name:'Patrick',type:'partner',role:'LATAM Distributor',company:'Independent',geo:'Brazil',companies:['Blings','Enabley','Limy AI'],strength:5,status:'prospects',parentId:null,companyStatus:{'Blings':'signed','Enabley':'prospects','Limy AI':'prospects'},clientsByCompany:{'Blings':['Grupo Globo (Brazil)','Claro Brasil'],'Enabley':['Banco Itaú','Bradesco']},commissions:{'Blings':{1:20},'Enabley':{1:20}},notes:'Key Brazil distributor. First to validate LATAM model.'},
   {id:2,name:'Doron',type:'referrer',role:'Connector / Referrer',company:'Independent',geo:'Israel',companies:['Limy AI','Cytrix'],strength:4,status:'signed',parentId:null,companyStatus:{'Limy AI':'signed','Cytrix':'signed'},clientsByCompany:{},commissions:{'Limy AI':{2:15},'Cytrix':{2:12.5}},notes:'חיבר את Tailwind ל-Limy AI ול-Cytrix. מתחלק with עומר חצי-חצי: Limy — 15% כל אחד מתוך 30%, Cytrix — 12.5% כל אחד מתוך 25%.'},
   {id:3,name:'Rafa Calderon',type:'partner',role:'CEO, Driftwood Capital',company:'Driftwood Capital',geo:'LATAM',companies:['Enabley','Blings'],strength:4,status:'initial',parentId:null,dualRole:'client',dualRoleNote:'CEO of Driftwood Capital — also a potential client',companyStatus:{},clientsByCompany:{},commissions:{},notes:'Partner Prospect שגויס ישירות on ידי עומר. גם Client Prospect כמנכ"ל Driftwood Capital. Deep LATAM enterprise connections.'},
   {id:4,name:'Eden Hai',type:'contact',role:'Accelerator Director',company:'Eden Accelerator',geo:'Israel',companies:['Limy AI','Sency AI'],strength:3,status:'initial',parentId:null,companyStatus:{},clientsByCompany:{},commissions:{},notes:'Runs accelerator program. Relevant for Limy and Sency introductions.'},
@@ -641,27 +630,24 @@ const CLIENT_STAGES=[
   {id:'proposal',      label:'Proposal Sent',       color:'#64b4ff', icon:'📄'},
   {id:'pilot',         label:'Pilot Scheduled',     color:'#ff9966', icon:'🚀'},
   {id:'contract',      label:'Contract Signed ✓',  color:'#00e5b0', icon:'✅'},
+  {id:'hold',          label:'On Hold',             color:'#888888', icon:'⏸️'},
 ];
 
 let PEOPLE=[];
 let CLIENTS=[];
 
-// Known clients — always seeded if not already in localStorage
+// Known clients — seeded on load. partnerIds use special keys: 'omer', 'rafael', 'patrick', 'rafa', 'atar'
 const CLIENTS_DEFAULTS=[
-  // Miami University — only signed paying client
-  {id:203,name:'Miami University',portfolioCo:'Blings',sector:'Education',stage:'contract',payment:15000,partnerIds:[{pid:'13',pct:95},{pid:'omer',pct:5}],contacts:[{name:'Dr. Weiss',role:'Professor',email:''}],notes:'Rafael Uston lead — Omer 5% co-partner. $15K/mo'},
-  // Omer prospects
-  {id:200,name:'Comboxx',portfolioCo:'Limy AI',sector:'B2B SaaS',stage:'followup',payment:0,partnerIds:[{pid:'omer',pct:100}],contacts:[{name:'Omri',role:'BD Director',email:''}],notes:'In discussions'},
-  {id:201,name:'Driftwood Capital',portfolioCo:'Blings',sector:'Investment',stage:'intro_meeting',payment:0,partnerIds:[{pid:'omer',pct:50},{pid:'3',pct:50}],contacts:[{name:'Rafa Calderon',role:'CEO',email:''}],notes:'Rafa Calderon — dual role'},
-  {id:202,name:'Proxima',portfolioCo:'Cytrix',sector:'Cyber',stage:'email_sent',payment:0,partnerIds:[{pid:'omer',pct:100}],contacts:[],notes:'Prospect'},
-  // Patrick prospects
-  {id:204,name:'Grupo Globo (Brazil)',portfolioCo:'Blings',sector:'Media',stage:'followup',payment:0,partnerIds:[{pid:'1',pct:100}],contacts:[],notes:'Patrick LATAM pipeline'},
-  {id:205,name:'Claro Brasil',portfolioCo:'Blings',sector:'Telecom',stage:'proposal',payment:0,partnerIds:[{pid:'1',pct:100}],contacts:[],notes:'Patrick LATAM pipeline'},
-  {id:206,name:'Banco Itaú',portfolioCo:'Enabley',sector:'Finance',stage:'followup',payment:0,partnerIds:[{pid:'1',pct:100}],contacts:[],notes:'Patrick LATAM pipeline'},
-  {id:207,name:'Bradesco',portfolioCo:'Enabley',sector:'Finance',stage:'intro_meeting',payment:0,partnerIds:[{pid:'1',pct:100}],contacts:[],notes:'Patrick LATAM pipeline'},
-  // Atar Family clients
-  {id:208,name:'Kibbutz Galuyot Network',portfolioCo:'Jessica Energy',sector:'Agriculture',stage:'followup',payment:0,partnerIds:[{pid:'9',pct:100}],contacts:[],notes:'Atar Family pipeline'},
-  {id:209,name:'Israeli Agri Ministry',portfolioCo:'Jessica Energy',sector:'Government',stage:'pilot',payment:0,partnerIds:[{pid:'9',pct:100}],contacts:[],notes:'Atar Family pilot'},
+  {id:203,name:'Miami University',portfolioCo:'Blings',sector:'Education',stage:'contract',payment:15000,partnerIds:[{pid:'rafael',pct:95},{pid:'omer',pct:5}],contacts:[{name:'Dr. Weiss',role:'Professor',email:''}],notes:'Rafael Uston lead (95%) — Omer co-partner (5%). $15K/mo'},
+  {id:200,name:'Comboxx',portfolioCo:'Limy AI',sector:'B2B SaaS / Communications',stage:'followup',payment:0,partnerIds:[{pid:'omer',pct:100}],contacts:[{name:'Michal Raz',role:'SVP Growth & Partners',email:'michal.r@commbox.io'},{name:'Omri',role:'BD Director',email:''}],notes:'In discussions with Omer for Limy AI'},
+  {id:201,name:'Driftwood Capital',portfolioCo:'Blings',sector:'Investment',stage:'intro_meeting',payment:0,partnerIds:[{pid:'omer',pct:50},{pid:'rafa',pct:50}],contacts:[{name:'Rafa Calderon',role:'CEO',email:''}],notes:'Rafa Calderon — dual role partner & client'},
+  {id:202,name:'Proxima',portfolioCo:'Cytrix',sector:'Cyber',stage:'email_sent',payment:0,partnerIds:[{pid:'omer',pct:100}],contacts:[],notes:'Prospect via Omer'},
+  {id:204,name:'Grupo Globo (Brazil)',portfolioCo:'Blings',sector:'Media',stage:'followup',payment:0,partnerIds:[{pid:'patrick',pct:100}],contacts:[],notes:'Patrick LATAM pipeline'},
+  {id:205,name:'Claro Brasil',portfolioCo:'Blings',sector:'Telecom',stage:'proposal',payment:0,partnerIds:[{pid:'patrick',pct:100}],contacts:[],notes:'Patrick LATAM pipeline'},
+  {id:206,name:'Banco Itaú',portfolioCo:'Enabley',sector:'Finance',stage:'followup',payment:0,partnerIds:[{pid:'patrick',pct:100}],contacts:[],notes:'Patrick LATAM pipeline'},
+  {id:207,name:'Bradesco',portfolioCo:'Enabley',sector:'Finance',stage:'intro_meeting',payment:0,partnerIds:[{pid:'patrick',pct:100}],contacts:[],notes:'Patrick LATAM pipeline'},
+  {id:208,name:'Kibbutz Galuyot Network',portfolioCo:'Jessica Energy',sector:'Agriculture',stage:'followup',payment:0,partnerIds:[{pid:'atar',pct:100}],contacts:[],notes:'Atar Family pipeline'},
+  {id:209,name:'Israeli Agri Ministry',portfolioCo:'Jessica Energy',sector:'Government',stage:'pilot',payment:0,partnerIds:[{pid:'atar',pct:100}],contacts:[],notes:'Atar Family pilot'},
 ];
 let nextId=14;
 let nextClientId=100;
@@ -690,7 +676,8 @@ const tc=t=>TC[t]||'type-contact';
 const SK_BACKUP='tailwind_backup_v1';
 
 function save(){
-  const data=JSON.stringify({people:PEOPLE,clients:CLIENTS,companies:COMPANIES,nextId,nextClientId});
+  if(!window._deletedClientIds)window._deletedClientIds=[];
+  const data=JSON.stringify({people:PEOPLE,clients:CLIENTS,companies:COMPANIES,nextId,nextClientId,deletedClientIds:window._deletedClientIds});
   localStorage.setItem(SK,data);
   localStorage.setItem(SK_BACKUP,data);
   const el=document.getElementById('last-saved');
@@ -735,16 +722,17 @@ function load(){
     CLIENTS=d&&d.clients?d.clients:[];
     if(d&&d.nextClientId)nextClientId=d.nextClientId;
 
-    // Always ensure CLIENTS_DEFAULTS exist and are up to date
+    // Load deleted client IDs from saved data
+    window._deletedClientIds=(d&&d.deletedClientIds)||[];
+
+    // Seed defaults — skip any deleted by user
     CLIENTS_DEFAULTS.forEach(def=>{
+      if(window._deletedClientIds.includes(def.id))return;
       const idx=CLIENTS.findIndex(c=>c.id===def.id);
       if(idx===-1){
         CLIENTS.push(JSON.parse(JSON.stringify(def)));
       } else {
-        // Update stage/payment/partnerIds from defaults only if user hasn't changed them
-        // (keep user changes to payment and stage)
         if(!CLIENTS[idx]._userEdited){
-          // Just ensure partnerIds and contacts are set if missing
           if(!CLIENTS[idx].partnerIds||!CLIENTS[idx].partnerIds.length)
             CLIENTS[idx].partnerIds=def.partnerIds;
           if(!CLIENTS[idx].contacts||!CLIENTS[idx].contacts.length)
@@ -755,6 +743,14 @@ function load(){
 
     // Also migrate any remaining old-style clientsByCompany / potentialsByCompany
     const existingNames=new Set(CLIENTS.map(c=>c.name.toLowerCase().trim()));
+    // Also include deleted names so they don't get re-migrated
+    const deletedNames=new Set((window._deletedClientIds||[]).map(id=>{
+      // try to find name from old data if still in people
+      return String(id);
+    }));
+    // Load deleted names separately
+    const deletedNamesSet=new Set(JSON.parse(localStorage.getItem('tailwind_deleted_names')||'[]').map(n=>n.toLowerCase()));
+
     PEOPLE.forEach(person=>{
       ['clientsByCompany','potentialsByCompany'].forEach(field=>{
         const isSigned=field==='clientsByCompany';
@@ -762,6 +758,7 @@ function load(){
           (person[field][co]||[]).forEach(clientName=>{
             const key=clientName.toLowerCase().trim();
             if(existingNames.has(key))return;
+            if(deletedNamesSet.has(key))return; // was deleted by user — skip
             const cd=(person.clientData&&person.clientData[co]&&person.clientData[co][clientName])||{};
             const partners=[];
             (cd.partners||[]).forEach(pp=>partners.push({pid:String(pp.id),pct:pp.pct||0}));
@@ -1048,7 +1045,8 @@ function renderClientsPage(){
 
   // Group by stage
   const signed=list.filter(c=>c.stage==='contract');
-  const pipeline=list.filter(c=>c.stage!=='contract');
+  const onHold=list.filter(c=>c.stage==='hold');
+  const pipeline=list.filter(c=>c.stage!=='contract'&&c.stage!=='hold');
 
   container.innerHTML=`
     ${signed.length?`
@@ -1059,6 +1057,11 @@ function renderClientsPage(){
     ${pipeline.length?`
       <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--accent);margin-bottom:10px;">🎯 Pipeline (${pipeline.length})</div>
       ${pipeline.map(c=>clientRow(c)).join('')}
+      <div style="height:20px;"></div>
+    `:''}
+    ${onHold.length?`
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#888888;margin-bottom:10px;">⏸️ On Hold (${onHold.length})</div>
+      ${onHold.map(c=>clientRow(c)).join('')}
     `:''}
   `;
 }
@@ -1068,7 +1071,7 @@ function clientRow(c){
   const coColor=coData?coData.color:'var(--accent)';
   const stageDef=CLIENT_STAGES.find(s=>s.id===c.stage)||CLIENT_STAGES[0];
   const partners=(c.partnerIds||[]).map(pp=>{
-    const name=pp.pid==='omer'?'Omer':PEOPLE.find(x=>x.id==pp.pid)?.name||'?';
+    const name=resolvePartnerName(pp.pid);
     return`<span style="font-size:10px;background:rgba(124,111,255,0.1);border:1px solid rgba(124,111,255,0.2);color:var(--accent);padding:1px 7px;border-radius:10px;">${name} ${pp.pct?pp.pct+'%':''}</span>`;
   }).join('');
   const contacts=(c.contacts||[]).slice(0,2).map(ct=>`<span style="font-size:10px;color:var(--muted);">${ct.name}${ct.role?` (${ct.role})`:''}</span>`).join(' · ');
@@ -1215,15 +1218,23 @@ function openClientModal(id){
     <!-- STAGE -->
     <div class="msec">
       <div class="msec-title">Deal Stage</div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;">
-        ${CLIENT_STAGES.map(s=>`<div onclick="setClientEntityStage(${id},'${s.id}')"
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
+        ${CLIENT_STAGES.filter(s=>s.id!=='hold').map(s=>`<div onclick="setClientEntityStage(${id},'${s.id}')"
           style="padding:6px 12px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;
             border:1px solid ${c.stage===s.id?s.color:'var(--border2)'};
             background:${c.stage===s.id?'rgba(0,0,0,0.25)':'transparent'};
-            color:${c.stage===s.id?s.color:'var(--muted)'}"
+            color:${c.stage===s.id?s.color:'var(--muted)'};"
           onmouseover="this.style.borderColor='${s.color}';this.style.color='${s.color}'"
-          onmouseout="this.style.borderColor='${c.stage===s.id?s.color:'var(--border2)}'}';this.style.color='${c.stage===s.id?s.color:'var(--muted)'}'"
-          >${s.icon} ${s.label}</div>`).join('')}
+          onmouseout="this.style.borderColor='${c.stage===s.id?s.color:'var(--border2)'}';this.style.color='${c.stage===s.id?s.color:'var(--muted)'}'">
+          ${s.icon} ${s.label}</div>`).join('')}
+      </div>
+      <div onclick="setClientEntityStage(${id},'${c.stage==='hold'?'email_sent':'hold'}')"
+        style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;
+          font-size:11px;font-weight:600;cursor:pointer;
+          border:1px solid ${c.stage==='hold'?'#888888':'var(--border2)'};
+          background:${c.stage==='hold'?'rgba(136,136,136,0.15)':'transparent'};
+          color:${c.stage==='hold'?'#888888':'var(--muted)'};">
+        ⏸️ ${c.stage==='hold'?'Remove Hold':'Put On Hold'}
       </div>
     </div>
 
@@ -1243,7 +1254,7 @@ function openClientModal(id){
       <div class="msec-title">🤝 Partners</div>
       <div id="cm-partners-${id}">
         ${(c.partnerIds||[]).map((pp,i)=>{
-          const name=pp.pid==='omer'?'Omer / Tailwind':PEOPLE.find(x=>x.id==pp.pid)?.name||'?';
+          const name=resolvePartnerName(pp.pid);
           return`<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:var(--surf2);border-radius:8px;margin-bottom:4px;font-size:12px;">
             <span>${name}</span>
             <div style="display:flex;align-items:center;gap:8px;">
@@ -1347,31 +1358,38 @@ function removeClientContact(id,idx){
 
 function deleteClient(id){
   if(!confirm('Delete this client?'))return;
+  const c=CLIENTS.find(x=>x.id===id);
+  const name=c?c.name:'';
   CLIENTS=CLIENTS.filter(x=>x.id!==id);
+  if(!window._deletedClientIds)window._deletedClientIds=[];
+  if(!window._deletedClientIds.includes(id))window._deletedClientIds.push(id);
+  // Also track by name to prevent migration re-adding
+  const deletedNames=JSON.parse(localStorage.getItem('tailwind_deleted_names')||'[]');
+  if(name&&!deletedNames.includes(name.toLowerCase()))deletedNames.push(name.toLowerCase());
+  localStorage.setItem('tailwind_deleted_names',JSON.stringify(deletedNames));
   save();closeOverlay('main-overlay');renderClientsPage();renderRevenue();renderDash();
-  notif('Client deleted');
+  notif(`${name} deleted`);
 }
 function renderRevenue(){
   const container=document.getElementById('revenue-content');
   if(!container)return;
 
-  const omer=PEOPLE.find(p=>p.name==='Omer Sadiv');
-  const omerId=omer?omer.id:null;
+  const omer=PEOPLE.find(p=>p.name==='Omer Sadiv')||{id:0,name:'Omer Sadiv'};
 
-  // Build deals from CLIENTS (new system)
+  // Build deals from CLIENTS — show all where Omer has a share
   const deals=CLIENTS.map(c=>{
     const coData=COMPANIES.find(x=>x.name===c.portfolioCo);
     const coColor=coData?coData.color:'var(--accent)';
     const stageDef=CLIENT_STAGES.find(s=>s.id===c.stage)||CLIENT_STAGES[0];
     const isSigned=c.stage==='contract';
-    const myShare=(c.partnerIds||[]).find(pp=>pp.pid==='omer'||String(pp.pid)===String(omerId));
+    const myShare=(c.partnerIds||[]).find(pp=>pidMatchesPerson(pp.pid,omer));
     const myPct=myShare?parseFloat(myShare.pct)||0:0;
     const payment=c.payment||0;
     const myMonthly=payment*(myPct/100);
-    const otherPartners=(c.partnerIds||[]).filter(pp=>pp.pid!=='omer'&&String(pp.pid)!==String(omerId));
-    const leadName=otherPartners.length?PEOPLE.find(x=>x.id==otherPartners[0].pid)?.name||'?':'Direct';
+    const otherPartners=(c.partnerIds||[]).filter(pp=>!pidMatchesPerson(pp.pid,omer));
+    const leadName=otherPartners.length?resolvePartnerName(otherPartners[0].pid):'Direct';
     return{clientId:c.id,clientName:c.name,company:c.portfolioCo,coColor,stageDef,isSigned,payment,myPct,myMonthly,leadName};
-  }).filter(d=>d.myPct>0||CLIENTS.find(c=>c.id===d.clientId)?.partnerIds?.length===0);
+  }).filter(d=>d.myPct>0);
 
   deals.sort((a,b)=>(b.isSigned-a.isSigned)||b.myMonthly-a.myMonthly);
 
@@ -1908,17 +1926,13 @@ function renderCoPanel(p,co,i){
   const coData=COMPANIES.find(c=>c.name===co);
   const coColor=coData?coData.color:'var(--accent)';
 
-  // Pull clients from CLIENTS store (new system)
-  const allClients=CLIENTS.filter(c=>c.portfolioCo===co&&(c.partnerIds||[]).some(pp=>String(pp.pid)===String(p.id)||pp.pid==='omer'&&p.id===0||pp.pid==='omer'&&p.name==='Omer Sadiv'));
-  // Also show as co-partner
-  const coPartnerClients=CLIENTS.filter(c=>c.portfolioCo===co&&!(c.partnerIds||[]).some(pp=>String(pp.pid)===String(p.id)||pp.pid==='omer'&&p.id===0)&&(c.partnerIds||[]).some(pp=>String(pp.pid)===String(p.id)));
-
+  // Pull clients from CLIENTS store using name-based matching
+  const allClients=CLIENTS.filter(c=>c.portfolioCo===co&&(c.partnerIds||[]).some(pp=>pidMatchesPerson(pp.pid,p)));
   const signedClients=allClients.filter(c=>c.stage==='contract');
   const prospects=allClients.filter(c=>c.stage!=='contract');
-
   const totalMonthly=signedClients.reduce((s,c)=>s+(c.payment||0),0);
   const totalMyComm=signedClients.reduce((s,c)=>{
-    const myShare=(c.partnerIds||[]).find(pp=>String(pp.pid)===String(p.id)||pp.pid==='omer'&&(p.id===0||p.name==='Omer Sadiv'));
+    const myShare=(c.partnerIds||[]).find(pp=>pidMatchesPerson(pp.pid,p));
     return s+(myShare&&c.payment?c.payment*(parseFloat(myShare.pct)||0)/100:0);
   },0);
   const totalClients=allClients.length;
@@ -1995,7 +2009,7 @@ function renderCoPanel(p,co,i){
           ${totalMonthly>0?`<span style="font-size:11px;color:#00e5b0;">$${totalMonthly.toLocaleString()}/mo</span>`:''}
         </div>
         ${signedClients.map(c=>{
-          const myShare=(c.partnerIds||[]).find(pp=>String(pp.pid)===String(p.id)||pp.pid==='omer'&&p.name==='Omer Sadiv');
+          const myShare=(c.partnerIds||[]).find(pp=>pidMatchesPerson(pp.pid,p));
           const myEarn=myShare&&c.payment?(c.payment*(myShare.pct||0)/100):0;
           return`<div style="background:rgba(0,229,176,0.04);border:1px solid rgba(0,229,176,0.2);border-radius:8px;padding:10px 12px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;"
             onclick="openClientModal(${c.id})">
@@ -2040,11 +2054,11 @@ function openAddClientFor(co,pid){
 
 // Co-partner clients — from CLIENTS store
 function renderCoPartnerClients(pid,co){
-  const myId=String(pid);
+  const myPerson=PEOPLE.find(x=>x.id===pid)||{id:pid,name:''};
   const coPartners=CLIENTS.filter(c=>
     c.portfolioCo===co &&
-    !(c.partnerIds||[]).some(pp=>String(pp.pid)===myId||pp.pid==='omer'&&myId==='0') &&
-    (c.partnerIds||[]).some(pp=>String(pp.pid)===myId)
+    !((c.partnerIds||[]).some(pp=>pidMatchesPerson(pp.pid,myPerson))) &&
+    false // co-partner section disabled — shown via allClients in renderCoPanel
   );
   if(!coPartners.length)return'';
   return`<div style="margin-top:14px;padding-top:14px;border-top:2px dashed var(--border2);">
@@ -2053,11 +2067,11 @@ function renderCoPartnerClients(pid,co){
       <span style="font-size:9px;color:var(--muted);font-weight:400;text-transform:none;margin-left:6px;">— led by another partner</span>
     </div>
     ${coPartners.map(c=>{
-      const myShare=(c.partnerIds||[]).find(pp=>String(pp.pid)===myId);
+      const myShare=(c.partnerIds||[]).find(pp=>pidMatchesPerson(pp.pid,myPerson));
       const stageDef=CLIENT_STAGES.find(s=>s.id===c.stage)||CLIENT_STAGES[0];
       const myEarn=myShare&&c.payment?(c.payment*(myShare.pct||0)/100):0;
-      const leadPartner=(c.partnerIds||[]).find(pp=>String(pp.pid)!==myId);
-      const leadName=leadPartner?(leadPartner.pid==='omer'?'Omer':PEOPLE.find(x=>String(x.id)===String(leadPartner.pid))?.name||'?'):'?';
+      const leadPartner=(c.partnerIds||[]).find(pp=>!pidMatchesPerson(pp.pid,myPerson));
+      const leadName=leadPartner?resolvePartnerName(leadPartner.pid):'?';
       return`<div onclick="openClientModal(${c.id})"
         style="background:rgba(124,111,255,0.04);border:1px solid rgba(124,111,255,0.2);border-radius:8px;
           padding:10px 12px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;">
@@ -2198,11 +2212,39 @@ function addAnyClient(pid,co){
   if(panel){const d=document.createElement('div');d.innerHTML=renderCoPanel(p,co,coIdx);panel.replaceWith(d.firstChild);}
   notif(`${val} added ✓`);
 }
+// Resolve a partner pid (name key or numeric id) to a person name
+function resolvePartnerName(pid){
+  if(!pid)return'?';
+  const lc=String(pid).toLowerCase();
+  if(lc==='omer')return'Omer / Tailwind';
+  if(lc==='rafael'||lc==='rafael uston')return'Rafael Uston';
+  if(lc==='patrick')return'Patrick';
+  if(lc==='rafa'||lc==='rafa calderon')return'Rafa Calderon';
+  if(lc==='atar'||lc==='atar family')return'Atar Family';
+  if(lc==='doron')return'Doron';
+  // Try numeric ID lookup
+  const p=PEOPLE.find(x=>String(x.id)===String(pid));
+  return p?p.name:'?';
+}
+
+// Check if a pid matches a person
+function pidMatchesPerson(pid,person){
+  if(!pid||!person)return false;
+  const lc=String(pid).toLowerCase();
+  if(lc==='omer')return person.name==='Omer Sadiv'||person.id===0;
+  if(lc==='rafael')return person.name.includes('Rafael Uston');
+  if(lc==='patrick')return person.name==='Patrick';
+  if(lc==='rafa')return person.name.includes('Rafa Calderon');
+  if(lc==='atar')return person.name.includes('Atar');
+  if(lc==='doron')return person.name==='Doron';
+  return String(person.id)===String(pid);
+}
+
 function renderPartnerSplit(pid,co,clientName,partners,payment){
   if(!partners||!partners.length)return`<div style="font-size:11px;color:var(--muted2);margin-bottom:4px;">No partners defined yet</div>`;
   const totalPct=partners.reduce((s,p)=>s+(parseFloat(p.pct)||0),0);
   return partners.map((pp,i)=>{
-    const name=pp.id==='omer'?'Omer / Tailwind':(PEOPLE.find(x=>x.id==pp.id)?.name||'?');
+    const name=resolvePartnerName(pp.pid||pp.id);
     // Commission = % of total monthly payment
     const earn=payment*(parseFloat(pp.pct)||0)/100;
     return`<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 8px;background:var(--surf3);border-radius:6px;margin-bottom:4px;font-size:12px;">
@@ -2695,9 +2737,70 @@ document.addEventListener('DOMContentLoaded',()=>{
 // ============================================================
 // UTILS
 // ============================================================
+function closeGlobalSearch(){
+  document.getElementById('global-results').style.display='none';
+}
+
+function globalSearch(q){
+  const res=document.getElementById('global-results');
+  if(!q||q.length<2){res.style.display='none';return;}
+  q=q.toLowerCase();
+  const hits=[];
+
+  // Search PEOPLE
+  PEOPLE.forEach(p=>{
+    if([p.name,p.role,p.company,p.geo,...(p.companies||[])].some(s=>s&&s.toLowerCase().includes(q))){
+      hits.push({type:'person',icon:'👤',label:p.name,sub:p.role+' · '+p.company,action:()=>{closeGlobalSearch();openPersonModal(p.id);}});
+    }
+  });
+
+  // Search CLIENTS
+  CLIENTS.forEach(c=>{
+    const searchFields=[
+      c.name, c.portfolioCo, c.sector||'', c.notes||'',
+      ...(c.contacts||[]).map(ct=>(ct.name||'')+' '+(ct.role||'')+' '+(ct.email||''))
+    ];
+    if(searchFields.some(s=>s&&s.toLowerCase().includes(q))){
+      hits.push({type:'client',icon:'🤝',label:c.name,sub:c.portfolioCo+(c.sector?' · '+c.sector:''),action:()=>{closeGlobalSearch();nav('clients');setTimeout(()=>openClientModal(c.id),100);}});
+    }
+  });
+
+  // Search COMPANIES
+  COMPANIES.forEach(co=>{
+    if([co.name,co.category,co.desc||''].some(s=>s&&s.toLowerCase().includes(q))){
+      hits.push({type:'company',icon:'🗂️',label:co.name,sub:co.category,action:()=>{closeGlobalSearch();nav('companies');}});
+    }
+  });
+
+  if(!hits.length){
+    res.innerHTML=`<div style="padding:16px;text-align:center;font-size:13px;color:var(--muted);">No results for "${q}"</div>`;
+    res.style.display='block';
+    return;
+  }
+
+  res.innerHTML=hits.slice(0,12).map((h,i)=>`
+    <div onclick="searchHits[${i}].action()"
+      style="display:flex;align-items:center;gap:12px;padding:12px 16px;cursor:pointer;border-bottom:1px solid var(--border);"
+      onmouseover="this.style.background='var(--surf2)'" onmouseout="this.style.background=''">
+      <span style="font-size:18px;flex-shrink:0;">${h.icon}</span>
+      <div>
+        <div style="font-size:13px;font-weight:600;">${h.label}</div>
+        <div style="font-size:11px;color:var(--muted);">${h.sub}</div>
+      </div>
+    </div>`).join('');
+  window.searchHits=hits;
+  res.style.display='block';
+}
+
+// Close search when clicking outside
+document.addEventListener('click',function(e){
+  if(!e.target.closest('#global-search')&&!e.target.closest('#global-results')){
+    closeGlobalSearch();
+  }
+},false);
+
 function closeOverlay(id){
   document.getElementById(id).classList.remove('open');
-  // always refresh visible page when closing modal
   renderDash();
   renderCompanies();
   renderPeople();
