@@ -2,6 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+<meta http-equiv="Pragma" content="no-cache"/>
+<meta http-equiv="Expires" content="0"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Tailwind CRM</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
@@ -1762,7 +1765,7 @@ function renderPeople(){
     if(el)el.textContent=c===sortCol?(sortDir===1?'↑':'↓'):'';
   });
   const tbody=document.getElementById('people-tbody');
-  if(!list.length){tbody.innerHTML=`<tr><td colspan="7" style="text-align:center;padding:48px;color:var(--muted);">No people found</td></tr>`;return;}
+  if(!list.length){tbody.innerHTML=`<tr><td colspan="8" style="text-align:center;padding:48px;color:var(--muted);">No people found</td></tr>`;return;}
   tbody.innerHTML=list.map(p=>{
     const personClients=CLIENTS.filter(c=>(c.partnerIds||[]).some(pp=>pidMatchesPerson(pp.pid,p)));
     const signedClients=personClients.filter(c=>c.stage==='contract');
@@ -1786,10 +1789,42 @@ function renderPeople(){
       <td onclick="openPersonModal(${p.id})">${(p.companies||[]).map(c=>`<span class="pt-co-chip">${c}</span>`).join('')||'<span style="color:var(--muted2);font-size:11px;">—</span>'}</td>
       <td onclick="openPersonModal(${p.id})"><div class="str-mini">${[1,2,3,4,5].map(i=>`<div class="str-mini-dot${i<=(p.strength||0)?' on':''}"></div>`).join('')}</div></td>
       <td onclick="openPersonModal(${p.id})">
-        ${signedClients.slice(0,2).map(c=>`<span class="pt-client-chip" style="display:inline-flex;align-items:center;gap:4px;">✅ ${c.name}<span onclick="event.stopPropagation();deleteClientFromPeople(${c.id})" style="cursor:pointer;color:var(--red);font-size:10px;margin-left:2px;opacity:0.7;" title="Remove">✕</span></span>`).join('')}
-        ${prospectClients.slice(0,2).map(c=>`<span class="pt-client-chip pt-client-pot" style="display:inline-flex;align-items:center;gap:4px;">🎯 ${c.name}<span onclick="event.stopPropagation();deleteClientFromPeople(${c.id})" style="cursor:pointer;color:var(--red);font-size:10px;margin-left:2px;opacity:0.7;" title="Remove">✕</span></span>`).join('')}
+        ${signedClients.slice(0,2).map(c=>`<span class="pt-client-chip">✅ ${c.name}</span>`).join('')}
+        ${prospectClients.slice(0,2).map(c=>`<span class="pt-client-chip pt-client-pot">🎯 ${c.name}</span>`).join('')}
         ${personClients.length>4?`<span style="font-size:10px;color:var(--muted);">+${personClients.length-4}</span>`:''}
         ${!personClients.length?'<span style="color:var(--muted2);font-size:11px;">—</span>':''}
+      </td>
+      <td onclick="event.stopPropagation()" style="text-align:right;padding-right:10px;">
+        <div style="position:relative;display:inline-block;">
+          <button onclick="toggleRowMenu('rm-${p.id}')"
+            style="background:none;border:1px solid var(--border);border-radius:6px;
+              color:var(--muted);cursor:pointer;padding:4px 8px;font-size:14px;line-height:1;">⋯</button>
+          <div id="rm-${p.id}" style="display:none;position:absolute;right:0;top:28px;z-index:200;
+            background:var(--surf2);border:1px solid var(--border2);border-radius:10px;
+            box-shadow:0 8px 24px rgba(0,0,0,0.4);min-width:160px;overflow:hidden;">
+            <div onclick="toggleRowMenu('rm-${p.id}');openPersonModal(${p.id})"
+              style="padding:10px 14px;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:8px;"
+              onmouseover="this.style.background='var(--surf3)'" onmouseout="this.style.background=''">
+              👤 View Profile
+            </div>
+            <div onclick="toggleRowMenu('rm-${p.id}');openPersonEditor(${p.id})"
+              style="padding:10px 14px;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:8px;"
+              onmouseover="this.style.background='var(--surf3)'" onmouseout="this.style.background=''">
+              ✏️ Edit
+            </div>
+            <div onclick="toggleRowMenu('rm-${p.id}');openAddClientFor('',${p.id})"
+              style="padding:10px 14px;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:8px;"
+              onmouseover="this.style.background='var(--surf3)'" onmouseout="this.style.background=''">
+              ➕ Add Client
+            </div>
+            <div style="border-top:1px solid var(--border);"></div>
+            <div onclick="toggleRowMenu('rm-${p.id}');deletePerson(${p.id})"
+              style="padding:10px 14px;font-size:12px;cursor:pointer;color:var(--red);display:flex;align-items:center;gap:8px;"
+              onmouseover="this.style.background='var(--surf3)'" onmouseout="this.style.background=''">
+              🗑 Delete
+            </div>
+          </div>
+        </div>
       </td>
     </tr>`;
   }).join('');
@@ -2347,6 +2382,29 @@ function setStr(id,val){
   save();notif('Strength updated');
 }
 function saveNotes(id){const p=PEOPLE.find(x=>x.id===id);if(!p)return;p.notes=document.getElementById(`nt-${id}`).value;save();notif('Notes saved ✓');}
+function toggleRowMenu(id){
+  const el=document.getElementById(id);if(!el)return;
+  const isOpen=el.style.display==='block';
+  document.querySelectorAll('[id^="rm-"]').forEach(m=>m.style.display='none');
+  if(!isOpen){
+    el.style.display='block';
+    setTimeout(()=>{
+      document.addEventListener('click',function closeMenu(e){
+        if(!el.contains(e.target))el.style.display='none';
+        document.removeEventListener('click',closeMenu);
+      });
+    },10);
+  }
+}
+
+function openPersonEditor(id){
+  openPersonModal(id);
+  setTimeout(()=>{
+    const btn=document.getElementById(`edit-btn-${id}`);
+    if(btn)btn.click();
+  },300);
+}
+
 function delPerson(id){
   if(!confirm('Remove this person?'))return;
   const p=PEOPLE.find(x=>x.id===id);
