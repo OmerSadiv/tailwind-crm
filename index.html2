@@ -276,7 +276,7 @@ hr{border:none;border-top:1px solid var(--border);margin:16px 0;}
     Tailwind · Omer Sadiv
     <div id="last-saved"></div>
     <button class="reset-btn" style="background:rgba(0,229,176,0.1);color:var(--green);border-color:rgba(0,229,176,0.25);margin-bottom:6px;" onclick="smartUpdate()">🔄 Sync Update</button>
-    <button class="reset-btn" onclick="resetData()">↺ Reset to defaults</button>
+    
   </div>
 </nav>
 
@@ -362,6 +362,18 @@ hr{border:none;border-top:1px solid var(--border);margin:16px 0;}
 </div>
 
 <main class="main">
+
+<!-- GLOBAL SEARCH -->
+<div style="position:sticky;top:0;z-index:100;background:var(--bg);padding:10px 0 8px;margin-bottom:4px;border-bottom:1px solid var(--border);">
+  <div style="position:relative;">
+    <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:14px;pointer-events:none;">🔍</span>
+    <input id="global-search" placeholder="Search anything — people, clients, companies…"
+      style="width:100%;padding:10px 16px 10px 38px;margin:0;font-size:13px;border-radius:10px;"
+      oninput="globalSearch(this.value)"
+      onkeydown="if(event.key==='Escape'){this.value='';closeGlobalSearch();}"/>
+  </div>
+  <div id="global-results" style="display:none;position:absolute;left:0;right:0;background:var(--surf);border:1px solid var(--border2);border-radius:12px;margin-top:4px;max-height:400px;overflow-y:auto;z-index:200;box-shadow:0 8px 32px rgba(0,0,0,0.4);"></div>
+</div>
 
 <!-- DASHBOARD -->
 <div class="page active" id="page-dashboard">
@@ -592,7 +604,7 @@ const COMPANIES_DEFAULTS=JSON.parse(JSON.stringify(COMPANIES));
 // ============================================================
 const DEFAULTS=[
   {id:0,name:'Omer Sadiv',type:'partner',role:'Founder & BD Lead',company:'Tailwind',geo:'Israel',companies:['Limy AI','Blings','Cytrix','VISITT','Sency AI','Shavit Group','Enabley','RePower'],strength:5,status:'prospects',parentId:null,dualRole:null,companyStatus:{'Limy AI':'prospects','Blings':'prospects','Cytrix':'prospects','VISITT':'prospects','Sency AI':'prospects','Enabley':'prospects','RePower':'prospects'},clientsByCompany:{},potentialsByCompany:{},clientData:{},commissions:{},notes:'Tailwind founder. Manages all portfolio relationships. Ex-Pernod Ricard.'},
-  {id:1,name:'Patrick',type:'partner',role:'LATAM Distributor',company:'Independent',geo:'Brazil',companies:['Blings','Enabley','Limy AI'],strength:5,status:'prospects',parentId:null,companyStatus:{'Blings':'signed','Enabley':'prospects','Limy AI':'prospects'},clientsByCompany:{'Blings':['Grupo Globo (Brazil)','Claro Brasil'],'Enabley':['Banco Itaú','Bradesco']},commissions:{'Blings':{1:20},'Enabley':{1:20}},notes:'Key Brazil distributor. First to validate LATAM model.'},
+  {id:1,name:'Patrick',type:'partner',role:'LATAM Distributor',company:'Independent',geo:'Brazil',companies:['Blings','Enabley','Limy AI'],strength:5,status:'prospects',parentId:null,companyStatus:{'Blings':'signed','Enabley':'prospects','Limy AI':'prospects'},clientsByCompany:{},commissions:{'Blings':{1:20},'Enabley':{1:20}},notes:'Key Brazil distributor. First to validate LATAM model.'},
   {id:2,name:'Doron',type:'referrer',role:'Connector / Referrer',company:'Independent',geo:'Israel',companies:['Limy AI','Cytrix'],strength:4,status:'signed',parentId:null,companyStatus:{'Limy AI':'signed','Cytrix':'signed'},clientsByCompany:{},commissions:{'Limy AI':{2:15},'Cytrix':{2:12.5}},notes:'חיבר את Tailwind ל-Limy AI ול-Cytrix. מתחלק with עומר חצי-חצי: Limy — 15% כל אחד מתוך 30%, Cytrix — 12.5% כל אחד מתוך 25%.'},
   {id:3,name:'Rafa Calderon',type:'partner',role:'CEO, Driftwood Capital',company:'Driftwood Capital',geo:'LATAM',companies:['Enabley','Blings'],strength:4,status:'initial',parentId:null,dualRole:'client',dualRoleNote:'CEO of Driftwood Capital — also a potential client',companyStatus:{},clientsByCompany:{},commissions:{},notes:'Partner Prospect שגויס ישירות on ידי עומר. גם Client Prospect כמנכ"ל Driftwood Capital. Deep LATAM enterprise connections.'},
   {id:4,name:'Eden Hai',type:'contact',role:'Accelerator Director',company:'Eden Accelerator',geo:'Israel',companies:['Limy AI','Sency AI'],strength:3,status:'initial',parentId:null,companyStatus:{},clientsByCompany:{},commissions:{},notes:'Runs accelerator program. Relevant for Limy and Sency introductions.'},
@@ -600,11 +612,11 @@ const DEFAULTS=[
   {id:6,name:'Dana',type:'contact',role:'Head of Marketing',company:'Bank Leumi',geo:'Israel',companies:['Limy AI'],strength:3,status:'initial',parentId:null,companyStatus:{},clientsByCompany:{},commissions:{},notes:'Enterprise marketing buyer at major Israeli bank.'},
   {id:7,name:'Omri',type:'partner',role:'BD Director',company:'Commbox',geo:'Israel',companies:['Limy AI'],strength:3,status:'followup',parentId:null,companyStatus:{'Limy AI':'followup'},clientsByCompany:{},commissions:{},notes:'Commbox enterprise messaging base. Evaluating Limy AI channel partnership.'},
   {id:8,name:'Dr. Weiss',type:'contact',role:'Professor',company:'University of Miami',geo:'USA',companies:['Blings'],strength:3,status:'initial',parentId:null,companyStatus:{},clientsByCompany:{},commissions:{},notes:'איש Strength שחיבר ל-University of Miami ועובד Name. University of Miami הם הClient.'},
-  {id:9,name:'Atar Family',type:'partner',role:'Agriculture & Energy',company:'Atar Group',geo:'Israel',companies:['Jessica Energy'],strength:4,status:'prospects',parentId:null,companyStatus:{'Jessica Energy':'signed'},clientsByCompany:{'Jessica Energy':['Kibbutz Galuyot Network','Israeli Agri Ministry pilot']},commissions:{'Jessica Energy':{9:20}},notes:'Agriculture and energy connections. Key for Solar Startup agri-PV adoption.'},
+  {id:9,name:'Atar Family',type:'partner',role:'Agriculture & Energy',company:'Atar Group',geo:'Israel',companies:['Jessica Energy'],strength:4,status:'prospects',parentId:null,companyStatus:{'Jessica Energy':'signed'},clientsByCompany:{},potentialsByCompany:{},commissions:{'Jessica Energy':{9:20}},notes:'Agriculture and energy connections. Key for Jessica Energy agri-PV adoption.'},
   {id:10,name:'Roberto',type:'partner',role:'US Real Estate Executive',company:'US Real Estate',geo:'USA',companies:['VISITT'],strength:4,status:'followup',parentId:null,companyStatus:{'VISITT':'followup'},clientsByCompany:{},commissions:{},notes:'Strong US real estate network. Evaluating VISITT for building management.'},
   {id:11,name:'תומר שקרוב',type:'partner',role:'Director of Managed Security',company:'Konfidas',geo:'Israel',companies:['Cytrix'],strength:3,status:'followup',parentId:null,companyStatus:{'Cytrix':'followup'},clientsByCompany:{},commissions:{},notes:'Partner Prospect לסייטריקס. לפני חתימת הסכם. Konfidas — חברת סייבר ישראלית with Clients ארגוניים.'},
-  {id:12,name:'Eitam Argaman',type:'contact',role:'CMO & Co-Founder',company:'RePower',geo:'Israel',companies:['RePower'],strength:4,status:'initial',parentId:null,companyStatus:{},clientsByCompany:{},commissions:{},notes:'איש הStrength הישיר ב-RePower. אחד המייסדים. RePower — סנסור NIR לביוגז.'},
-  {id:13,name:'Rafael Uston',type:'partner',role:'Partner',company:'Independent',geo:'USA',companies:['Blings'],strength:4,status:'signed',parentId:null,dualRole:null,companyStatus:{'Blings':'signed'},clientsByCompany:{},potentialsByCompany:{},clientData:{},commissions:{},notes:'Partner on Blings. Lead partner on Miami University deal — $15K/mo. Omer 5% co-partner.'}
+  {id:20,name:'Eitam Argaman',type:'contact',role:'CMO & Co-Founder',company:'RePower',geo:'Israel',companies:['RePower'],strength:4,status:'initial',parentId:null,companyStatus:{},clientsByCompany:{},commissions:{},notes:'איש הStrength הישיר ב-RePower. אחד המייסדים. RePower — סנסור NIR לביוגז.'},
+  {id:21,name:'Rafael Uston',type:'partner',role:'Partner',company:'Independent',geo:'USA',companies:['Blings'],strength:4,status:'signed',parentId:null,dualRole:null,companyStatus:{'Blings':'signed'},clientsByCompany:{},potentialsByCompany:{},clientData:{},commissions:{},notes:'Partner on Blings. Lead partner on Miami University deal — $15K/mo. Omer 5% co-partner.'}
 ];
 
 // ============================================================
@@ -618,6 +630,7 @@ const CLIENT_STAGES=[
   {id:'proposal',      label:'Proposal Sent',       color:'#64b4ff', icon:'📄'},
   {id:'pilot',         label:'Pilot Scheduled',     color:'#ff9966', icon:'🚀'},
   {id:'contract',      label:'Contract Signed ✓',  color:'#00e5b0', icon:'✅'},
+  {id:'hold',          label:'On Hold',             color:'#888888', icon:'⏸️'},
 ];
 
 let PEOPLE=[];
@@ -636,7 +649,7 @@ const CLIENTS_DEFAULTS=[
   {id:208,name:'Kibbutz Galuyot Network',portfolioCo:'Jessica Energy',sector:'Agriculture',stage:'followup',payment:0,partnerIds:[{pid:'atar',pct:100}],contacts:[],notes:'Atar Family pipeline'},
   {id:209,name:'Israeli Agri Ministry',portfolioCo:'Jessica Energy',sector:'Government',stage:'pilot',payment:0,partnerIds:[{pid:'atar',pct:100}],contacts:[],notes:'Atar Family pilot'},
 ];
-let nextId=14;
+let nextId=22;
 let nextClientId=100;
 let pFilter='all';
 const SK='tailwind_v4';
@@ -663,7 +676,17 @@ const tc=t=>TC[t]||'type-contact';
 const SK_BACKUP='tailwind_backup_v1';
 
 function save(){
-  const data=JSON.stringify({people:PEOPLE,clients:CLIENTS,companies:COMPANIES,nextId,nextClientId});
+  if(!window._deletedClientIds)window._deletedClientIds=[];
+  if(!window._deletedClientNames)window._deletedClientNames=new Set();
+  const data=JSON.stringify({
+    people:PEOPLE,
+    clients:CLIENTS,
+    companies:COMPANIES,
+    nextId,
+    nextClientId,
+    deletedClientIds:window._deletedClientIds,
+    deletedClientNames:[...window._deletedClientNames]
+  });
   localStorage.setItem(SK,data);
   localStorage.setItem(SK_BACKUP,data);
   const el=document.getElementById('last-saved');
@@ -674,59 +697,61 @@ function load(){
   let d=null;
   try{
     const r=localStorage.getItem(SK)||localStorage.getItem(SK_BACKUP);
-    if(r){
-      d=JSON.parse(r);
-      PEOPLE=d.people||dc(DEFAULTS);
-      nextId=d.nextId||13;
-      if(d.companies&&d.companies.length){
-        d.companies.forEach(saved=>{
-          const idx=COMPANIES.findIndex(c=>c.id===saved.id);
-          if(idx!==-1){
-            ['name','desc','website','commissionPct','raised','investors'].forEach(f=>{
-              if(saved[f]!==undefined)COMPANIES[idx][f]=saved[f];
-            });
-          }
-        });
-      }
-    } else {
-      PEOPLE=dc(DEFAULTS);
-    }
+    if(r) d=JSON.parse(r);
+
+    // ── PEOPLE ──────────────────────────────────────────────
+    PEOPLE=d&&d.people?d.people:dc(DEFAULTS);
+    nextId=d&&d.nextId?d.nextId:14;
     PEOPLE.forEach(p=>{
       if(!p.type)p.type='partner';
       if(!p.companyStatus)p.companyStatus={};
       if(!p.clientsByCompany)p.clientsByCompany={};
       if(!p.potentialsByCompany)p.potentialsByCompany={};
-      if(!p.clientStatuses)p.clientStatuses={};
-      if(!p.clientPayments)p.clientPayments={};
       if(!p.clientData)p.clientData={};
       if(!p.commissions)p.commissions={};
       if(p.parentId===undefined)p.parentId=null;
       if(p.dualRole===undefined)p.dualRole=null;
     });
 
-    // CLIENTS — load from storage, then seed defaults
+    // ── COMPANIES ────────────────────────────────────────────
+    if(d&&d.companies&&d.companies.length){
+      d.companies.forEach(saved=>{
+        const idx=COMPANIES.findIndex(c=>c.id===saved.id);
+        if(idx!==-1){
+          ['name','desc','website','commissionPct','raised','investors'].forEach(f=>{
+            if(saved[f]!==undefined)COMPANIES[idx][f]=saved[f];
+          });
+        }
+      });
+    }
+
+    // ── CLIENTS ──────────────────────────────────────────────
     CLIENTS=d&&d.clients?d.clients:[];
     if(d&&d.nextClientId)nextClientId=d.nextClientId;
 
-    // Always ensure CLIENTS_DEFAULTS exist and are up to date
-    CLIENTS_DEFAULTS.forEach(def=>{
-      const idx=CLIENTS.findIndex(c=>c.id===def.id);
-      if(idx===-1){
-        CLIENTS.push(JSON.parse(JSON.stringify(def)));
-      } else {
-        // Update stage/payment/partnerIds from defaults only if user hasn't changed them
-        // (keep user changes to payment and stage)
-        if(!CLIENTS[idx]._userEdited){
-          // Just ensure partnerIds and contacts are set if missing
-          if(!CLIENTS[idx].partnerIds||!CLIENTS[idx].partnerIds.length)
-            CLIENTS[idx].partnerIds=def.partnerIds;
-          if(!CLIENTS[idx].contacts||!CLIENTS[idx].contacts.length)
-            CLIENTS[idx].contacts=def.contacts;
-        }
-      }
+    // Single source of truth for deleted IDs and names — both in main save data
+    window._deletedClientIds=(d&&d.deletedClientIds)||
+      JSON.parse(localStorage.getItem('tailwind_deleted_clients')||'[]');
+    window._deletedClientNames=new Set((d&&d.deletedClientNames)||
+      JSON.parse(localStorage.getItem('tailwind_deleted_names')||'[]'));
+
+    // Migrate old numeric partner IDs → name keys
+    const pidMap={'0':'omer','1':'patrick','2':'doron','3':'rafa','9':'atar','12':'omer','13':'rafael','21':'rafael'};
+    CLIENTS.forEach(c=>{
+      (c.partnerIds||[]).forEach(pp=>{
+        if(pidMap[String(pp.pid)])pp.pid=pidMap[String(pp.pid)];
+      });
     });
 
-    // Also migrate any remaining old-style clientsByCompany / potentialsByCompany
+    // Seed known defaults — skip if deleted by user
+    CLIENTS_DEFAULTS.forEach(def=>{
+      if(window._deletedClientIds.includes(def.id))return;
+      if(window._deletedClientNames.has(def.name.toLowerCase()))return;
+      const exists=CLIENTS.find(c=>c.id===def.id||c.name.toLowerCase()===def.name.toLowerCase());
+      if(!exists)CLIENTS.push(dc(def));
+    });
+
+    // Migrate old potentialsByCompany entries — ONLY if not already in CLIENTS and not deleted
     const existingNames=new Set(CLIENTS.map(c=>c.name.toLowerCase().trim()));
     PEOPLE.forEach(person=>{
       ['clientsByCompany','potentialsByCompany'].forEach(field=>{
@@ -735,23 +760,38 @@ function load(){
           (person[field][co]||[]).forEach(clientName=>{
             const key=clientName.toLowerCase().trim();
             if(existingNames.has(key))return;
+            if(window._deletedClientNames.has(key))return;
+            if(window._deletedClientIds.some(id=>id===clientName))return;
             const cd=(person.clientData&&person.clientData[co]&&person.clientData[co][clientName])||{};
             const partners=[];
-            (cd.partners||[]).forEach(pp=>partners.push({pid:String(pp.id),pct:pp.pct||0}));
+            (cd.partners||[]).forEach(pp=>{
+              const mapped=pidMap[String(pp.id)]||String(pp.id);
+              partners.push({pid:mapped,pct:pp.pct||0});
+            });
             if(!partners.length)partners.push({pid:person.id===0?'omer':String(person.id),pct:0});
             CLIENTS.push({
               id:nextClientId++,name:clientName,portfolioCo:co,sector:'',
               stage:cd.stage||(isSigned?'contract':'email_sent'),
               payment:cd.payment||0,partnerIds:partners,contacts:[],
-              notes:`Migrated from ${person.name}`,createdAt:Date.now()
+              notes:'',createdAt:Date.now()
             });
             existingNames.add(key);
           });
         });
       });
+      // Clear old fields — CLIENTS is now the source of truth
+      person.clientsByCompany={};
+      person.potentialsByCompany={};
+      person.clientData={};
     });
 
-  }catch(e){console.error('Load error:',e);PEOPLE=dc(DEFAULTS);CLIENTS=JSON.parse(JSON.stringify(CLIENTS_DEFAULTS));}
+  }catch(e){
+    console.error('Load error:',e);
+    PEOPLE=dc(DEFAULTS);
+    CLIENTS=dc(CLIENTS_DEFAULTS);
+    window._deletedClientIds=[];
+    window._deletedClientNames=new Set();
+  }
 }
 
 function dc(a){return JSON.parse(JSON.stringify(a));}
@@ -1021,7 +1061,8 @@ function renderClientsPage(){
 
   // Group by stage
   const signed=list.filter(c=>c.stage==='contract');
-  const pipeline=list.filter(c=>c.stage!=='contract');
+  const onHold=list.filter(c=>c.stage==='hold');
+  const pipeline=list.filter(c=>c.stage!=='contract'&&c.stage!=='hold');
 
   container.innerHTML=`
     ${signed.length?`
@@ -1032,6 +1073,11 @@ function renderClientsPage(){
     ${pipeline.length?`
       <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--accent);margin-bottom:10px;">🎯 Pipeline (${pipeline.length})</div>
       ${pipeline.map(c=>clientRow(c)).join('')}
+      <div style="height:20px;"></div>
+    `:''}
+    ${onHold.length?`
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#888888;margin-bottom:10px;">⏸️ On Hold (${onHold.length})</div>
+      ${onHold.map(c=>clientRow(c)).join('')}
     `:''}
   `;
 }
@@ -1188,15 +1234,23 @@ function openClientModal(id){
     <!-- STAGE -->
     <div class="msec">
       <div class="msec-title">Deal Stage</div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;">
-        ${CLIENT_STAGES.map(s=>`<div onclick="setClientEntityStage(${id},'${s.id}')"
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
+        ${CLIENT_STAGES.filter(s=>s.id!=='hold').map(s=>`<div onclick="setClientEntityStage(${id},'${s.id}')"
           style="padding:6px 12px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;
             border:1px solid ${c.stage===s.id?s.color:'var(--border2)'};
             background:${c.stage===s.id?'rgba(0,0,0,0.25)':'transparent'};
-            color:${c.stage===s.id?s.color:'var(--muted)'}"
+            color:${c.stage===s.id?s.color:'var(--muted)'};"
           onmouseover="this.style.borderColor='${s.color}';this.style.color='${s.color}'"
-          onmouseout="this.style.borderColor='${c.stage===s.id?s.color:'var(--border2)}'}';this.style.color='${c.stage===s.id?s.color:'var(--muted)'}'"
-          >${s.icon} ${s.label}</div>`).join('')}
+          onmouseout="this.style.borderColor='${c.stage===s.id?s.color:'var(--border2)'}';this.style.color='${c.stage===s.id?s.color:'var(--muted)'}'">
+          ${s.icon} ${s.label}</div>`).join('')}
+      </div>
+      <div onclick="setClientEntityStage(${id},'${c.stage==='hold'?'email_sent':'hold'}')"
+        style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;
+          font-size:11px;font-weight:600;cursor:pointer;
+          border:1px solid ${c.stage==='hold'?'#888888':'var(--border2)'};
+          background:${c.stage==='hold'?'rgba(136,136,136,0.15)':'transparent'};
+          color:${c.stage==='hold'?'#888888':'var(--muted)'};">
+        ⏸️ ${c.stage==='hold'?'Remove Hold':'Put On Hold'}
       </div>
     </div>
 
@@ -1320,9 +1374,17 @@ function removeClientContact(id,idx){
 
 function deleteClient(id){
   if(!confirm('Delete this client?'))return;
+  const c=CLIENTS.find(x=>x.id===id);
+  const name=c?c.name.toLowerCase():'';
   CLIENTS=CLIENTS.filter(x=>x.id!==id);
-  save();closeOverlay('main-overlay');renderClientsPage();renderRevenue();renderDash();
-  notif('Client deleted');
+  if(!window._deletedClientIds)window._deletedClientIds=[];
+  if(!window._deletedClientNames)window._deletedClientNames=new Set();
+  if(!window._deletedClientIds.includes(id))window._deletedClientIds.push(id);
+  if(name)window._deletedClientNames.add(name);
+  save();
+  closeOverlay('main-overlay');
+  renderClientsPage();renderRevenue();renderDash();
+  notif(`${c?c.name:'Client'} deleted`);
 }
 function renderRevenue(){
   const container=document.getElementById('revenue-content');
@@ -1702,12 +1764,9 @@ function renderPeople(){
   const tbody=document.getElementById('people-tbody');
   if(!list.length){tbody.innerHTML=`<tr><td colspan="7" style="text-align:center;padding:48px;color:var(--muted);">No people found</td></tr>`;return;}
   tbody.innerHTML=list.map(p=>{
-    const allClients=[
-      ...(Object.values(p.clientsByCompany||{}).flat()),
-      ...(Object.values(p.potentialsByCompany||{}).flat())
-    ];
-    const existingClients=Object.values(p.clientsByCompany||{}).flat();
-    const potClients=Object.values(p.potentialsByCompany||{}).flat();
+    const personClients=CLIENTS.filter(c=>(c.partnerIds||[]).some(pp=>pidMatchesPerson(pp.pid,p)));
+    const signedClients=personClients.filter(c=>c.stage==='contract');
+    const prospectClients=personClients.filter(c=>c.stage!=='contract'&&c.stage!=='hold');
     return`<tr data-pid="${p.id}" style="cursor:pointer;" onmouseenter="this.style.background='var(--surf2)'" onmouseleave="this.style.background=''">
       <td onclick="openPersonModal(${p.id})" style="cursor:pointer;">
         <div style="display:flex;align-items:center;gap:9px;">
@@ -1727,10 +1786,10 @@ function renderPeople(){
       <td onclick="openPersonModal(${p.id})">${(p.companies||[]).map(c=>`<span class="pt-co-chip">${c}</span>`).join('')||'<span style="color:var(--muted2);font-size:11px;">—</span>'}</td>
       <td onclick="openPersonModal(${p.id})"><div class="str-mini">${[1,2,3,4,5].map(i=>`<div class="str-mini-dot${i<=(p.strength||0)?' on':''}"></div>`).join('')}</div></td>
       <td onclick="openPersonModal(${p.id})">
-        ${existingClients.slice(0,2).map(c=>`<span class="pt-client-chip">✅ ${c}</span>`).join('')}
-        ${potClients.slice(0,2).map(c=>`<span class="pt-client-chip pt-client-pot">🎯 ${c}</span>`).join('')}
-        ${allClients.length>4?`<span style="font-size:10px;color:var(--muted);">+${allClients.length-4}</span>`:''}
-        ${!allClients.length?'<span style="color:var(--muted2);font-size:11px;">—</span>':''}
+        ${signedClients.slice(0,2).map(c=>`<span class="pt-client-chip" style="display:inline-flex;align-items:center;gap:4px;">✅ ${c.name}<span onclick="event.stopPropagation();deleteClientFromPeople(${c.id})" style="cursor:pointer;color:var(--red);font-size:10px;margin-left:2px;opacity:0.7;" title="Remove">✕</span></span>`).join('')}
+        ${prospectClients.slice(0,2).map(c=>`<span class="pt-client-chip pt-client-pot" style="display:inline-flex;align-items:center;gap:4px;">🎯 ${c.name}<span onclick="event.stopPropagation();deleteClientFromPeople(${c.id})" style="cursor:pointer;color:var(--red);font-size:10px;margin-left:2px;opacity:0.7;" title="Remove">✕</span></span>`).join('')}
+        ${personClients.length>4?`<span style="font-size:10px;color:var(--muted);">+${personClients.length-4}</span>`:''}
+        ${!personClients.length?'<span style="color:var(--muted2);font-size:11px;">—</span>':''}
       </td>
     </tr>`;
   }).join('');
@@ -2134,38 +2193,10 @@ document.addEventListener('click',function(e){
   }
 },true);
 
-function renderClients(pid,co,clients){
-  if(!clients||!clients.length)return`<div style="font-size:11px;color:var(--muted2);padding:4px 0;">No signed clients yet</div>`;
-  return clients.map((c,i)=>renderClientCard(pid,co,c,i,true)).join('');
-}
+function renderClients(){/* legacy — replaced by CLIENTS system */}
 
-function renderPotentials(pid,co,potentials){
-  if(!potentials||!potentials.length)return`<div style="font-size:11px;color:var(--muted2);padding:4px 0;">None yet</div>`;
-  return potentials.map((c,i)=>renderClientCard(pid,co,c,i,false)).join('');
-}
-function addAnyClient(pid,co){
-  const coKey=co.replace(/\s+/g,'_');
-  const inp=document.getElementById(`na-${pid}-${coKey}`);
-  const val=inp.value.trim();if(!val)return;
-  const p=PEOPLE.find(x=>x.id===pid);if(!p)return;
-  // Check only within THIS person's own lists — allow same client under different partners
-  const mine=[
-    ...((p.clientsByCompany&&p.clientsByCompany[co])||[]),
-    ...((p.potentialsByCompany&&p.potentialsByCompany[co])||[])
-  ];
-  if(mine.some(c=>c.toLowerCase()===val.toLowerCase())){
-    notif(`"${val}" already in your list for ${co}`);return;
-  }
-  if(!p.potentialsByCompany)p.potentialsByCompany={};
-  if(!p.potentialsByCompany[co])p.potentialsByCompany[co]=[];
-  p.potentialsByCompany[co].push(val);
-  inp.value='';
-  save();renderCompanies();
-  const coIdx=(p.companies||[]).indexOf(co);
-  const panel=document.getElementById(`ctp-${pid}-${coIdx}`);
-  if(panel){const d=document.createElement('div');d.innerHTML=renderCoPanel(p,co,coIdx);panel.replaceWith(d.firstChild);}
-  notif(`${val} added ✓`);
-}
+function renderPotentials(){/* legacy — replaced by CLIENTS system */}
+function addAnyClient(){/* legacy — replaced by CLIENTS system */}
 // Resolve a partner pid (name key or numeric id) to a person name
 function resolvePartnerName(pid){
   if(!pid)return'?';
@@ -2217,46 +2248,11 @@ function renderPartnerSplit(pid,co,clientName,partners,payment){
   </div>`;
 }
 
-function addPartnerToClient(pid,co,clientName,idx){
-  const coKey=co.replace(/\s+/g,'_');
-  const sel=document.getElementById(`padd-${pid}-${coKey}-${idx}`);
-  const pctInp=document.getElementById(`ppct-${pid}-${coKey}-${idx}`);
-  if(!sel||!pctInp){notif('Error — please try again');return;}
-  const partnerId=sel.value;const pct=parseFloat(pctInp.value)||0;
-  if(!partnerId){notif('Select a partner');return;}
-  const cd=getClientData(pid,co,clientName);
-  if(!cd.partners)cd.partners=[];
-  if(cd.partners.find(pp=>String(pp.id)===String(partnerId))){notif('Partner already added');return;}
-  cd.partners.push({id:partnerId,pct});
-  sel.value='';pctInp.value='';
-  save();
-  const p=PEOPLE.find(x=>x.id===pid);
-  const clientIdx=(p.clientsByCompany&&p.clientsByCompany[co]||[]).indexOf(clientName);
-  const splitEl=document.getElementById(`psplit-${pid}-${coKey}-${clientIdx}`);
-  if(splitEl)splitEl.innerHTML=renderPartnerSplit(pid,co,clientName,cd.partners,cd.payment);
-  notif('Partner added ✓');
-}
+function addPartnerToClient(){/* legacy — replaced by CLIENTS system */}
 
-function updatePartnerPct(pid,co,clientName,partnerIdx,val){
-  const cd=getClientData(pid,co,clientName);
-  if(cd.partners&&cd.partners[partnerIdx])cd.partners[partnerIdx].pct=parseFloat(val)||0;
-  save();
-  const p=PEOPLE.find(x=>x.id===pid);
-  const clientIdx=(p.clientsByCompany&&p.clientsByCompany[co]||[]).indexOf(clientName);
-  const splitEl=document.getElementById(`psplit-${pid}-${co.replace(/\s+/g,'_')}-${clientIdx}`);
-  if(splitEl)splitEl.innerHTML=renderPartnerSplit(pid,co,clientName,cd.partners,cd.payment);
-}
+function updatePartnerPct(){/* legacy — replaced by CLIENTS system */}
 
-function removePartnerFromClient(pid,co,clientName,partnerIdx){
-  const cd=getClientData(pid,co,clientName);
-  if(cd.partners)cd.partners.splice(partnerIdx,1);
-  save();
-  const p=PEOPLE.find(x=>x.id===pid);
-  const clientIdx=(p.clientsByCompany&&p.clientsByCompany[co]||[]).indexOf(clientName);
-  const splitEl=document.getElementById(`psplit-${pid}-${co.replace(/\s+/g,'_')}-${clientIdx}`);
-  if(splitEl)splitEl.innerHTML=renderPartnerSplit(pid,co,clientName,cd.partners,cd.payment);
-  notif('Removed');
-}
+function removePartnerFromClient(){/* legacy — replaced by CLIENTS system */}
 
 function setClientPayment(pid,co,clientName,val){
   const cd=getClientData(pid,co,clientName);
@@ -2270,83 +2266,23 @@ function setClientPayment(pid,co,clientName,val){
 }
 
 function setClientStage(pid,co,clientName,clientIdx,stage){
-  try{
-    const cd=getClientData(pid,co,clientName);
-    cd.stage=stage;
-    if(stage==='contract'){
-      const p=PEOPLE.find(x=>x.id===pid);
-      if(p){
-        const isPot=(p.potentialsByCompany&&p.potentialsByCompany[co]||[]).includes(clientName);
-        if(isPot){
-          p.potentialsByCompany[co]=(p.potentialsByCompany[co]||[]).filter(c=>c!==clientName);
-          if(!p.clientsByCompany)p.clientsByCompany={};
-          if(!p.clientsByCompany[co])p.clientsByCompany[co]=[];
-          if(!p.clientsByCompany[co].includes(clientName))p.clientsByCompany[co].push(clientName);
-          save();
-          const coIdx=(p.companies||[]).indexOf(co);
-          const panel=document.getElementById(`ctp-${pid}-${coIdx}`);
-          if(panel){const d=document.createElement('div');d.innerHTML=renderCoPanel(p,co,coIdx);panel.replaceWith(d.firstChild);}
-          notif(`${clientName} → Contract Signed ✓ 🎉`);
-          return;
-        }
-      }
-    }
+  // Find in CLIENTS and update stage there
+  const c=CLIENTS.find(x=>x.name.toLowerCase()===clientName.toLowerCase()&&x.portfolioCo===co);
+  if(c){
+    c.stage=stage;
     save();
-    const p=PEOPLE.find(x=>x.id===pid);
-    const coKey=co.replace(/\s+/g,'_');
-    const isSig=(p.clientsByCompany&&p.clientsByCompany[co]||[]).includes(clientName);
-    if(isSig){
-      const clEl=document.getElementById(`cl-${pid}-${coKey}`);
-      if(clEl)clEl.innerHTML=renderClients(pid,co,p.clientsByCompany[co]||[]);
-    } else {
-      const potEl=document.getElementById(`pot-${pid}-${coKey}`);
-      if(potEl)potEl.innerHTML=renderPotentials(pid,co,p.potentialsByCompany&&p.potentialsByCompany[co]||[]);
-    }
     const stageLabel=CLIENT_STAGES.find(s=>s.id===stage)?.label||stage;
     notif(`${clientName} → ${stageLabel}`);
-  }catch(e){notif('Error updating status');}
+    renderClientsPage();
+  }
 }
 
-function deepCleanClient(co,clientName){
-  // Remove from EVERY person's lists and clientData — complete wipe
-  PEOPLE.forEach(person=>{
-    if(person.potentialsByCompany&&person.potentialsByCompany[co])
-      person.potentialsByCompany[co]=person.potentialsByCompany[co].filter(c=>c!==clientName);
-    if(person.clientsByCompany&&person.clientsByCompany[co])
-      person.clientsByCompany[co]=person.clientsByCompany[co].filter(c=>c!==clientName);
-    if(person.clientData&&person.clientData[co])
-      delete person.clientData[co][clientName];
-  });
-}
+function deepCleanClient(){/* legacy — replaced by CLIENTS system */}
 
-function remPotential(pid,co,idx){
-  const p=PEOPLE.find(x=>x.id===pid);if(!p)return;
-  const clientName=(p.potentialsByCompany&&p.potentialsByCompany[co]||[])[idx];
-  if(!clientName)return;
-  deepCleanClient(co,clientName);
-  save();renderCompanies();
-  const coIdx=(p.companies||[]).indexOf(co);
-  const panel=document.getElementById(`ctp-${pid}-${coIdx}`);
-  if(panel){const d=document.createElement('div');d.innerHTML=renderCoPanel(p,co,coIdx);panel.replaceWith(d.firstChild);}
-  notif(`${clientName} removed`);
-}
+function remPotential(){/* legacy — replaced by CLIENTS system */}
 
-function remClient(pid,co,idx){
-  const p=PEOPLE.find(x=>x.id===pid);if(!p)return;
-  const clientName=(p.clientsByCompany&&p.clientsByCompany[co]||[])[idx];
-  if(!clientName)return;
-  deepCleanClient(co,clientName);
-  save();renderCompanies();
-  const coIdx=(p.companies||[]).indexOf(co);
-  const panel=document.getElementById(`ctp-${pid}-${coIdx}`);
-  if(panel){const d=document.createElement('div');d.innerHTML=renderCoPanel(p,co,coIdx);panel.replaceWith(d.firstChild);}
-  notif(`${clientName} removed`);
-}
-function editPotential(pid,co,idx,val){
-  const p=PEOPLE.find(x=>x.id===pid);if(!p)return;
-  if(p.potentialsByCompany&&p.potentialsByCompany[co])p.potentialsByCompany[co][idx]=val;
-  save();notif('Updated ✓');
-}
+function remClient(){/* legacy — replaced by CLIENTS system */}
+function editPotential(){/* legacy — replaced by CLIENTS system */}
 function editField(id,field,val){
   const p=PEOPLE.find(x=>x.id===id);if(!p)return;
   p[field]=val;
@@ -2402,22 +2338,8 @@ function removeCompany(id,co){
   openPersonModal(id);
   notif(`${co} removed`);
 }
-function addClient(pid,co){
-  const coKey=co.replace(/\s+/g,'_');
-  const inp=document.getElementById(`nc-${pid}-${coKey}`);
-  const val=inp.value.trim();if(!val)return;
-  const p=PEOPLE.find(x=>x.id===pid);if(!p)return;
-  if(!p.clientsByCompany)p.clientsByCompany={};
-  if(!p.clientsByCompany[co])p.clientsByCompany[co]=[];
-  p.clientsByCompany[co].push(val);inp.value='';
-  document.getElementById(`cl-${pid}-${coKey}`).innerHTML=renderClients(pid,co,p.clientsByCompany[co]);
-  save();renderCompanies();notif('Client added ✓');
-}
-function editClient(pid,co,idx,val){
-  const p=PEOPLE.find(x=>x.id===pid);if(!p)return;
-  if(p.clientsByCompany&&p.clientsByCompany[co])p.clientsByCompany[co][idx]=val;
-  save();renderCompanies();notif('Updated ✓');
-}
+function addClient(){/* legacy — replaced by CLIENTS system */}
+function editClient(){/* legacy — replaced by CLIENTS system */}
 function setStr(id,val){
   const p=PEOPLE.find(x=>x.id===id);if(!p)return;p.strength=val;
   const w=document.getElementById(`str-${id}`);
@@ -2691,9 +2613,83 @@ document.addEventListener('DOMContentLoaded',()=>{
 // ============================================================
 // UTILS
 // ============================================================
+function closeGlobalSearch(){
+  document.getElementById('global-results').style.display='none';
+}
+
+function globalSearch(q){
+  const res=document.getElementById('global-results');
+  if(!q||q.length<2){res.style.display='none';return;}
+  q=q.toLowerCase();
+  const hits=[];
+
+  // Search PEOPLE
+  PEOPLE.forEach(p=>{
+    if([p.name,p.role,p.company,p.geo,...(p.companies||[])].some(s=>s&&s.toLowerCase().includes(q))){
+      hits.push({type:'person',icon:'👤',label:p.name,sub:p.role+' · '+p.company,action:()=>{closeGlobalSearch();openPersonModal(p.id);}});
+    }
+  });
+
+  // Search CLIENTS
+  CLIENTS.forEach(c=>{
+    const searchFields=[
+      c.name, c.portfolioCo, c.sector||'', c.notes||'',
+      ...(c.contacts||[]).map(ct=>(ct.name||'')+' '+(ct.role||'')+' '+(ct.email||''))
+    ];
+    if(searchFields.some(s=>s&&s.toLowerCase().includes(q))){
+      hits.push({type:'client',icon:'🤝',label:c.name,sub:c.portfolioCo+(c.sector?' · '+c.sector:''),action:()=>{closeGlobalSearch();nav('clients');setTimeout(()=>openClientModal(c.id),100);}});
+    }
+  });
+
+  // Search COMPANIES
+  COMPANIES.forEach(co=>{
+    if([co.name,co.category,co.desc||''].some(s=>s&&s.toLowerCase().includes(q))){
+      hits.push({type:'company',icon:'🗂️',label:co.name,sub:co.category,action:()=>{closeGlobalSearch();nav('companies');}});
+    }
+  });
+
+  if(!hits.length){
+    res.innerHTML=`<div style="padding:16px;text-align:center;font-size:13px;color:var(--muted);">No results for "${q}"</div>`;
+    res.style.display='block';
+    return;
+  }
+
+  res.innerHTML=hits.slice(0,12).map((h,i)=>`
+    <div onclick="searchHits[${i}].action()"
+      style="display:flex;align-items:center;gap:12px;padding:12px 16px;cursor:pointer;border-bottom:1px solid var(--border);"
+      onmouseover="this.style.background='var(--surf2)'" onmouseout="this.style.background=''">
+      <span style="font-size:18px;flex-shrink:0;">${h.icon}</span>
+      <div>
+        <div style="font-size:13px;font-weight:600;">${h.label}</div>
+        <div style="font-size:11px;color:var(--muted);">${h.sub}</div>
+      </div>
+    </div>`).join('');
+  window.searchHits=hits;
+  res.style.display='block';
+}
+
+// Close search when clicking outside
+document.addEventListener('click',function(e){
+  if(!e.target.closest('#global-search')&&!e.target.closest('#global-results')){
+    closeGlobalSearch();
+  }
+},false);
+
+function deleteClientFromPeople(id){
+  if(!confirm('Remove this client?'))return;
+  const c=CLIENTS.find(x=>x.id===id);
+  const name=c?c.name.toLowerCase():'';
+  CLIENTS=CLIENTS.filter(x=>x.id!==id);
+  if(!window._deletedClientIds)window._deletedClientIds=[];
+  if(!window._deletedClientNames)window._deletedClientNames=new Set();
+  if(!window._deletedClientIds.includes(id))window._deletedClientIds.push(id);
+  if(name)window._deletedClientNames.add(name);
+  save();renderPeople();renderDash();
+  notif(`${c?c.name:'Client'} removed ✓`);
+}
+
 function closeOverlay(id){
   document.getElementById(id).classList.remove('open');
-  // always refresh visible page when closing modal
   renderDash();
   renderCompanies();
   renderPeople();
@@ -2964,21 +2960,16 @@ function confirmAction(actionStr){
     addChatMsg(`✓ ${action.personName} → ${sl(action.newStatus)}`,'ai');
     notif('Status updated ✓');
   } else if(action.action==='add_client'){
-    const p=PEOPLE.find(x=>x.id===action.personId||x.name===action.personName);
-    if(p){
-      const co=action.company;
-      if(action.clientType==='signed'){
-        if(!p.clientsByCompany)p.clientsByCompany={};
-        if(!p.clientsByCompany[co])p.clientsByCompany[co]=[];
-        p.clientsByCompany[co].push(action.clientName);
-      } else {
-        if(!p.potentialsByCompany)p.potentialsByCompany={};
-        if(!p.potentialsByCompany[co])p.potentialsByCompany[co]=[];
-        p.potentialsByCompany[co].push(action.clientName);
-      }
-      save();renderCompanies();
-    }
-    addChatMsg(`✓ ${action.clientName} added to ${action.company}`,'ai');
+    const co=action.company||'';
+    const stage=action.clientType==='signed'?'contract':'email_sent';
+    const pid=action.personId||action.personName;
+    CLIENTS.push({
+      id:nextClientId++,name:action.clientName,portfolioCo:co,sector:'',
+      stage,payment:0,partnerIds:[{pid:String(pid),pct:0}],contacts:[],
+      notes:'Added via AI assistant',createdAt:Date.now()
+    });
+    save();renderClientsPage();renderDash();
+    addChatMsg(`✓ ${action.clientName} added to ${co}`,'ai');
     notif(`${action.clientName} added ✓`);
   }
 
