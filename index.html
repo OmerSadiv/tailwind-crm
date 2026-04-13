@@ -604,7 +604,7 @@ const COMPANIES_DEFAULTS=JSON.parse(JSON.stringify(COMPANIES));
 // ============================================================
 const DEFAULTS=[
   {id:0,name:'Omer Sadiv',type:'partner',role:'Founder & BD Lead',company:'Tailwind',geo:'Israel',companies:['Limy AI','Blings','Cytrix','VISITT','Sency AI','Shavit Group','Enabley','RePower'],strength:5,status:'prospects',parentId:null,dualRole:null,companyStatus:{'Limy AI':'prospects','Blings':'prospects','Cytrix':'prospects','VISITT':'prospects','Sency AI':'prospects','Enabley':'prospects','RePower':'prospects'},clientsByCompany:{},potentialsByCompany:{},clientData:{},commissions:{},notes:'Tailwind founder. Manages all portfolio relationships. Ex-Pernod Ricard.'},
-  {id:1,name:'Patrick',type:'partner',role:'LATAM Distributor',company:'Independent',geo:'Brazil',companies:['Blings','Enabley','Limy AI'],strength:5,status:'prospects',parentId:null,companyStatus:{'Blings':'signed','Enabley':'prospects','Limy AI':'prospects'},clientsByCompany:{'Blings':['Grupo Globo (Brazil)','Claro Brasil'],'Enabley':['Banco Itaú','Bradesco']},commissions:{'Blings':{1:20},'Enabley':{1:20}},notes:'Key Brazil distributor. First to validate LATAM model.'},
+  {id:1,name:'Patrick',type:'partner',role:'LATAM Distributor',company:'Independent',geo:'Brazil',companies:['Blings','Enabley','Limy AI'],strength:5,status:'prospects',parentId:null,companyStatus:{'Blings':'signed','Enabley':'prospects','Limy AI':'prospects'},clientsByCompany:{},commissions:{'Blings':{1:20},'Enabley':{1:20}},notes:'Key Brazil distributor. First to validate LATAM model.'},
   {id:2,name:'Doron',type:'referrer',role:'Connector / Referrer',company:'Independent',geo:'Israel',companies:['Limy AI','Cytrix'],strength:4,status:'signed',parentId:null,companyStatus:{'Limy AI':'signed','Cytrix':'signed'},clientsByCompany:{},commissions:{'Limy AI':{2:15},'Cytrix':{2:12.5}},notes:'חיבר את Tailwind ל-Limy AI ול-Cytrix. מתחלק with עומר חצי-חצי: Limy — 15% כל אחד מתוך 30%, Cytrix — 12.5% כל אחד מתוך 25%.'},
   {id:3,name:'Rafa Calderon',type:'partner',role:'CEO, Driftwood Capital',company:'Driftwood Capital',geo:'LATAM',companies:['Enabley','Blings'],strength:4,status:'initial',parentId:null,dualRole:'client',dualRoleNote:'CEO of Driftwood Capital — also a potential client',companyStatus:{},clientsByCompany:{},commissions:{},notes:'Partner Prospect שגויס ישירות on ידי עומר. גם Client Prospect כמנכ"ל Driftwood Capital. Deep LATAM enterprise connections.'},
   {id:4,name:'Eden Hai',type:'contact',role:'Accelerator Director',company:'Eden Accelerator',geo:'Israel',companies:['Limy AI','Sency AI'],strength:3,status:'initial',parentId:null,companyStatus:{},clientsByCompany:{},commissions:{},notes:'Runs accelerator program. Relevant for Limy and Sency introductions.'},
@@ -612,7 +612,7 @@ const DEFAULTS=[
   {id:6,name:'Dana',type:'contact',role:'Head of Marketing',company:'Bank Leumi',geo:'Israel',companies:['Limy AI'],strength:3,status:'initial',parentId:null,companyStatus:{},clientsByCompany:{},commissions:{},notes:'Enterprise marketing buyer at major Israeli bank.'},
   {id:7,name:'Omri',type:'partner',role:'BD Director',company:'Commbox',geo:'Israel',companies:['Limy AI'],strength:3,status:'followup',parentId:null,companyStatus:{'Limy AI':'followup'},clientsByCompany:{},commissions:{},notes:'Commbox enterprise messaging base. Evaluating Limy AI channel partnership.'},
   {id:8,name:'Dr. Weiss',type:'contact',role:'Professor',company:'University of Miami',geo:'USA',companies:['Blings'],strength:3,status:'initial',parentId:null,companyStatus:{},clientsByCompany:{},commissions:{},notes:'איש Strength שחיבר ל-University of Miami ועובד Name. University of Miami הם הClient.'},
-  {id:9,name:'Atar Family',type:'partner',role:'Agriculture & Energy',company:'Atar Group',geo:'Israel',companies:['Jessica Energy'],strength:4,status:'prospects',parentId:null,companyStatus:{'Jessica Energy':'signed'},clientsByCompany:{'Jessica Energy':['Kibbutz Galuyot Network','Israeli Agri Ministry pilot']},commissions:{'Jessica Energy':{9:20}},notes:'Agriculture and energy connections. Key for Solar Startup agri-PV adoption.'},
+  {id:9,name:'Atar Family',type:'partner',role:'Agriculture & Energy',company:'Atar Group',geo:'Israel',companies:['Jessica Energy'],strength:4,status:'prospects',parentId:null,companyStatus:{'Jessica Energy':'signed'},clientsByCompany:{},potentialsByCompany:{},commissions:{'Jessica Energy':{9:20}},notes:'Agriculture and energy connections. Key for Jessica Energy agri-PV adoption.'},
   {id:10,name:'Roberto',type:'partner',role:'US Real Estate Executive',company:'US Real Estate',geo:'USA',companies:['VISITT'],strength:4,status:'followup',parentId:null,companyStatus:{'VISITT':'followup'},clientsByCompany:{},commissions:{},notes:'Strong US real estate network. Evaluating VISITT for building management.'},
   {id:11,name:'תומר שקרוב',type:'partner',role:'Director of Managed Security',company:'Konfidas',geo:'Israel',companies:['Cytrix'],strength:3,status:'followup',parentId:null,companyStatus:{'Cytrix':'followup'},clientsByCompany:{},commissions:{},notes:'Partner Prospect לסייטריקס. לפני חתימת הסכם. Konfidas — חברת סייבר ישראלית with Clients ארגוניים.'},
   {id:20,name:'Eitam Argaman',type:'contact',role:'CMO & Co-Founder',company:'RePower',geo:'Israel',companies:['RePower'],strength:4,status:'initial',parentId:null,companyStatus:{},clientsByCompany:{},commissions:{},notes:'איש הStrength הישיר ב-RePower. אחד המייסדים. RePower — סנסור NIR לביוגז.'},
@@ -2265,41 +2265,15 @@ function setClientPayment(pid,co,clientName,val){
 }
 
 function setClientStage(pid,co,clientName,clientIdx,stage){
-  try{
-    const cd=getClientData(pid,co,clientName);
-    cd.stage=stage;
-    if(stage==='contract'){
-      const p=PEOPLE.find(x=>x.id===pid);
-      if(p){
-        const isPot=(p.potentialsByCompany&&p.potentialsByCompany[co]||[]).includes(clientName);
-        if(isPot){
-          p.potentialsByCompany[co]=(p.potentialsByCompany[co]||[]).filter(c=>c!==clientName);
-          if(!p.clientsByCompany)p.clientsByCompany={};
-          if(!p.clientsByCompany[co])p.clientsByCompany[co]=[];
-          if(!p.clientsByCompany[co].includes(clientName))p.clientsByCompany[co].push(clientName);
-          save();
-          const coIdx=(p.companies||[]).indexOf(co);
-          const panel=document.getElementById(`ctp-${pid}-${coIdx}`);
-          if(panel){const d=document.createElement('div');d.innerHTML=renderCoPanel(p,co,coIdx);panel.replaceWith(d.firstChild);}
-          notif(`${clientName} → Contract Signed ✓ 🎉`);
-          return;
-        }
-      }
-    }
+  // Find in CLIENTS and update stage there
+  const c=CLIENTS.find(x=>x.name.toLowerCase()===clientName.toLowerCase()&&x.portfolioCo===co);
+  if(c){
+    c.stage=stage;
     save();
-    const p=PEOPLE.find(x=>x.id===pid);
-    const coKey=co.replace(/\s+/g,'_');
-    const isSig=(p.clientsByCompany&&p.clientsByCompany[co]||[]).includes(clientName);
-    if(isSig){
-      const clEl=document.getElementById(`cl-${pid}-${coKey}`);
-      if(clEl)clEl.innerHTML=renderClients(pid,co,p.clientsByCompany[co]||[]);
-    } else {
-      const potEl=document.getElementById(`pot-${pid}-${coKey}`);
-      if(potEl)potEl.innerHTML=renderPotentials(pid,co,p.potentialsByCompany&&p.potentialsByCompany[co]||[]);
-    }
     const stageLabel=CLIENT_STAGES.find(s=>s.id===stage)?.label||stage;
     notif(`${clientName} → ${stageLabel}`);
-  }catch(e){notif('Error updating status');}
+    renderClientsPage();
+  }
 }
 
 function deepCleanClient(){/* legacy — replaced by CLIENTS system */}
@@ -2972,21 +2946,16 @@ function confirmAction(actionStr){
     addChatMsg(`✓ ${action.personName} → ${sl(action.newStatus)}`,'ai');
     notif('Status updated ✓');
   } else if(action.action==='add_client'){
-    const p=PEOPLE.find(x=>x.id===action.personId||x.name===action.personName);
-    if(p){
-      const co=action.company;
-      if(action.clientType==='signed'){
-        if(!p.clientsByCompany)p.clientsByCompany={};
-        if(!p.clientsByCompany[co])p.clientsByCompany[co]=[];
-        p.clientsByCompany[co].push(action.clientName);
-      } else {
-        if(!p.potentialsByCompany)p.potentialsByCompany={};
-        if(!p.potentialsByCompany[co])p.potentialsByCompany[co]=[];
-        p.potentialsByCompany[co].push(action.clientName);
-      }
-      save();renderCompanies();
-    }
-    addChatMsg(`✓ ${action.clientName} added to ${action.company}`,'ai');
+    const co=action.company||'';
+    const stage=action.clientType==='signed'?'contract':'email_sent';
+    const pid=action.personId||action.personName;
+    CLIENTS.push({
+      id:nextClientId++,name:action.clientName,portfolioCo:co,sector:'',
+      stage,payment:0,partnerIds:[{pid:String(pid),pct:0}],contacts:[],
+      notes:'Added via AI assistant',createdAt:Date.now()
+    });
+    save();renderClientsPage();renderDash();
+    addChatMsg(`✓ ${action.clientName} added to ${co}`,'ai');
     notif(`${action.clientName} added ✓`);
   }
 
