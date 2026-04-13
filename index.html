@@ -779,6 +779,10 @@ function load(){
           });
         });
       });
+      // Clear old fields — CLIENTS is now the source of truth
+      person.clientsByCompany={};
+      person.potentialsByCompany={};
+      person.clientData={};
     });
 
   }catch(e){
@@ -1760,12 +1764,9 @@ function renderPeople(){
   const tbody=document.getElementById('people-tbody');
   if(!list.length){tbody.innerHTML=`<tr><td colspan="7" style="text-align:center;padding:48px;color:var(--muted);">No people found</td></tr>`;return;}
   tbody.innerHTML=list.map(p=>{
-    const allClients=[
-      ...(Object.values(p.clientsByCompany||{}).flat()),
-      ...(Object.values(p.potentialsByCompany||{}).flat())
-    ];
-    const existingClients=Object.values(p.clientsByCompany||{}).flat();
-    const potClients=Object.values(p.potentialsByCompany||{}).flat();
+    const personClients=CLIENTS.filter(c=>(c.partnerIds||[]).some(pp=>pidMatchesPerson(pp.pid,p)));
+    const signedClients=personClients.filter(c=>c.stage==='contract');
+    const prospectClients=personClients.filter(c=>c.stage!=='contract'&&c.stage!=='hold');
     return`<tr data-pid="${p.id}" style="cursor:pointer;" onmouseenter="this.style.background='var(--surf2)'" onmouseleave="this.style.background=''">
       <td onclick="openPersonModal(${p.id})" style="cursor:pointer;">
         <div style="display:flex;align-items:center;gap:9px;">
@@ -1785,10 +1786,10 @@ function renderPeople(){
       <td onclick="openPersonModal(${p.id})">${(p.companies||[]).map(c=>`<span class="pt-co-chip">${c}</span>`).join('')||'<span style="color:var(--muted2);font-size:11px;">—</span>'}</td>
       <td onclick="openPersonModal(${p.id})"><div class="str-mini">${[1,2,3,4,5].map(i=>`<div class="str-mini-dot${i<=(p.strength||0)?' on':''}"></div>`).join('')}</div></td>
       <td onclick="openPersonModal(${p.id})">
-        ${existingClients.slice(0,2).map(c=>`<span class="pt-client-chip">✅ ${c}</span>`).join('')}
-        ${potClients.slice(0,2).map(c=>`<span class="pt-client-chip pt-client-pot">🎯 ${c}</span>`).join('')}
-        ${allClients.length>4?`<span style="font-size:10px;color:var(--muted);">+${allClients.length-4}</span>`:''}
-        ${!allClients.length?'<span style="color:var(--muted2);font-size:11px;">—</span>':''}
+        ${signedClients.slice(0,2).map(c=>`<span class="pt-client-chip" style="display:inline-flex;align-items:center;gap:4px;">✅ ${c.name}<span onclick="event.stopPropagation();deleteClientFromPeople(${c.id})" style="cursor:pointer;color:var(--red);font-size:10px;margin-left:2px;opacity:0.7;" title="Remove">✕</span></span>`).join('')}
+        ${prospectClients.slice(0,2).map(c=>`<span class="pt-client-chip pt-client-pot" style="display:inline-flex;align-items:center;gap:4px;">🎯 ${c.name}<span onclick="event.stopPropagation();deleteClientFromPeople(${c.id})" style="cursor:pointer;color:var(--red);font-size:10px;margin-left:2px;opacity:0.7;" title="Remove">✕</span></span>`).join('')}
+        ${personClients.length>4?`<span style="font-size:10px;color:var(--muted);">+${personClients.length-4}</span>`:''}
+        ${!personClients.length?'<span style="color:var(--muted2);font-size:11px;">—</span>':''}
       </td>
     </tr>`;
   }).join('');
@@ -2673,6 +2674,19 @@ document.addEventListener('click',function(e){
     closeGlobalSearch();
   }
 },false);
+
+function deleteClientFromPeople(id){
+  if(!confirm('Remove this client?'))return;
+  const c=CLIENTS.find(x=>x.id===id);
+  const name=c?c.name.toLowerCase():'';
+  CLIENTS=CLIENTS.filter(x=>x.id!==id);
+  if(!window._deletedClientIds)window._deletedClientIds=[];
+  if(!window._deletedClientNames)window._deletedClientNames=new Set();
+  if(!window._deletedClientIds.includes(id))window._deletedClientIds.push(id);
+  if(name)window._deletedClientNames.add(name);
+  save();renderPeople();renderDash();
+  notif(`${c?c.name:'Client'} removed ✓`);
+}
 
 function closeOverlay(id){
   document.getElementById(id).classList.remove('open');
