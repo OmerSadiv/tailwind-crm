@@ -287,6 +287,24 @@ hr{border:none;border-top:1px solid var(--border);margin:16px 0;}
 
 <div class="notif" id="notif"></div>
 
+<!-- Drive reminder banner -->
+<div id="drive-reminder" style="display:none;position:fixed;top:16px;left:50%;transform:translateX(-50%);
+  z-index:9999;background:#1a1a2e;border:1px solid rgba(124,111,255,0.5);border-radius:12px;
+  padding:12px 20px;display:flex;align-items:center;gap:12px;box-shadow:0 8px 32px rgba(0,0,0,0.5);">
+  <span style="font-size:18px;">☁️</span>
+  <div>
+    <div style="font-size:13px;font-weight:600;color:var(--text);">Drive לא מחובר</div>
+    <div style="font-size:11px;color:var(--muted);">הנתונים נשמרו מקומית — לחץ Connect Drive לגיבוי</div>
+  </div>
+  <button onclick="connectGoogleDrive();document.getElementById('drive-reminder').style.display='none';"
+    style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:6px 14px;
+      font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">
+    חבר עכשיו
+  </button>
+  <button onclick="document.getElementById('drive-reminder').style.display='none';_driveReminderShown=false;"
+    style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;">✕</button>
+</div>
+
 <!-- PDF VIEWER -->
 <div class="pdf-viewer" id="pdf-viewer" style="display:none;">
   <div class="pdf-viewer-header">
@@ -711,7 +729,23 @@ function save(){
   localStorage.setItem(SK_BACKUP,data);
   const el=document.getElementById('last-saved');
   if(el){const d=new Date();el.textContent='Saved'+(gdriveEnabled?' ☁️':'')+' '+d.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});}
-  if(gdriveEnabled&&gdriveToken)gdriveAutoSave(data);
+  if(gdriveEnabled&&gdriveToken){
+    gdriveAutoSave(data);
+  } else {
+    // Show Drive reminder banner if not connected
+    showDriveReminder();
+  }
+}
+
+let _driveReminderShown=false;
+function showDriveReminder(){
+  if(_driveReminderShown)return;
+  _driveReminderShown=true;
+  const banner=document.getElementById('drive-reminder');
+  if(banner){
+    banner.style.display='flex';
+    setTimeout(()=>{banner.style.display='none';_driveReminderShown=false;},8000);
+  }
 }
 
 // ============================================================
