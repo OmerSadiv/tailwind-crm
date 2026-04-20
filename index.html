@@ -278,12 +278,10 @@ hr{border:none;border-top:1px solid var(--border);margin:16px 0;}
   <div class="sidebar-footer">
     Tailwind · Omer Sadiv
     <div id="last-saved"></div>
-    <button class="reset-btn" style="background:rgba(0,229,176,0.1);color:var(--green);border-color:rgba(0,229,176,0.25);margin-bottom:4px;" onclick="smartUpdate()">🔄 Sync Update</button>
+    <button class="reset-btn" style="background:rgba(0,229,176,0.1);color:var(--green);border-color:rgba(0,229,176,0.25);margin-bottom:4px;" onclick="smartUpdate()">🔄 Sync</button>
     <button id="gdrive-btn" class="reset-btn" style="margin-bottom:4px;color:var(--muted);" onclick="connectGoogleDrive()">☁️ Connect Drive</button>
-    <button class="reset-btn" style="background:rgba(124,111,255,0.1);color:var(--accent);border-color:rgba(124,111,255,0.25);margin-bottom:4px;" onclick="backupData()">💾 Backup</button>
-    <button class="reset-btn" style="background:rgba(255,209,102,0.1);color:var(--yellow);border-color:rgba(255,209,102,0.25);margin-bottom:4px;" onclick="document.getElementById('restore-input').click()">📂 Restore</button>
+    <button class="reset-btn" style="opacity:0.4;font-size:8px;margin-top:2px;" onclick="backupData()" title="Backup">↓ Backup &nbsp;|&nbsp; <span onclick="event.stopPropagation();document.getElementById('restore-input').click()">↑ Restore</span></button>
     <input type="file" id="restore-input" accept=".json" style="display:none;" onchange="restoreData(this)"/>
-    <button class="reset-btn" style="margin-top:2px;opacity:0.4;font-size:8px;" onclick="exportToExcel()">↓ Export CSV</button>
   </div>
 </nav>
 
