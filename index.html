@@ -278,8 +278,12 @@ hr{border:none;border-top:1px solid var(--border);margin:16px 0;}
   <div class="sidebar-footer">
     Tailwind · Omer Sadiv
     <div id="last-saved"></div>
-    <button class="reset-btn" style="background:rgba(0,229,176,0.1);color:var(--green);border-color:rgba(0,229,176,0.25);margin-bottom:6px;" onclick="smartUpdate()">🔄 Sync Update</button>
-    <button class="reset-btn" style="margin-top:4px;opacity:0.5;font-size:8px;" onclick="exportToExcel()" title="Export data to Excel">↓ Export</button>
+    <button class="reset-btn" style="background:rgba(0,229,176,0.1);color:var(--green);border-color:rgba(0,229,176,0.25);margin-bottom:4px;" onclick="smartUpdate()">🔄 Sync Update</button>
+    <button id="gdrive-btn" class="reset-btn" style="margin-bottom:4px;color:var(--muted);" onclick="connectGoogleDrive()">☁️ Connect Drive</button>
+    <button class="reset-btn" style="background:rgba(124,111,255,0.1);color:var(--accent);border-color:rgba(124,111,255,0.25);margin-bottom:4px;" onclick="backupData()">💾 Backup</button>
+    <button class="reset-btn" style="background:rgba(255,209,102,0.1);color:var(--yellow);border-color:rgba(255,209,102,0.25);margin-bottom:4px;" onclick="document.getElementById('restore-input').click()">📂 Restore</button>
+    <input type="file" id="restore-input" accept=".json" style="display:none;" onchange="restoreData(this)"/>
+    <button class="reset-btn" style="margin-top:2px;opacity:0.4;font-size:8px;" onclick="exportToExcel()">↓ Export CSV</button>
   </div>
 </nav>
 
@@ -668,6 +672,12 @@ let nextId=22;
 let nextClientId=100;
 let pFilter='all';
 const SK='tailwind_v4';
+const GDRIVE_CLIENT_ID='578804457261-itfn1dkp0ap51mdeootq0qq576ng59us.apps.googleusercontent.com';
+const GDRIVE_SCOPE='https://www.googleapis.com/auth/drive.file';
+const GDRIVE_FILENAME='tailwind_crm_data.json';
+let gdriveFileId=null;
+let gdriveToken=null;
+let gdriveEnabled=false;
 
 // STATUS
 const SL={initial:'Initial Discussion',followup:'Follow-up Meeting',prospects:'Working on Prospects',signed:'Agreement Signed ✓',hold:'On Hold'};
@@ -694,18 +704,100 @@ function save(){
   if(!window._deletedClientIds)window._deletedClientIds=[];
   if(!window._deletedClientNames)window._deletedClientNames=new Set();
   const data=JSON.stringify({
-    people:PEOPLE,
-    clients:CLIENTS,
-    companies:COMPANIES,
-    nextId,
-    nextClientId,
+    people:PEOPLE,clients:CLIENTS,companies:COMPANIES,
+    nextId,nextClientId,
     deletedClientIds:window._deletedClientIds,
     deletedClientNames:[...window._deletedClientNames]
   });
   localStorage.setItem(SK,data);
   localStorage.setItem(SK_BACKUP,data);
   const el=document.getElementById('last-saved');
-  if(el){const d=new Date();el.textContent='Saved '+d.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});}
+  if(el){const d=new Date();el.textContent='Saved'+(gdriveEnabled?' ☁️':'')+' '+d.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});}
+  if(gdriveEnabled&&gdriveToken)gdriveAutoSave(data);
+}
+
+// ============================================================
+// GOOGLE DRIVE SYNC
+// ============================================================
+function connectGoogleDrive(){
+  const script=document.createElement('script');
+  script.src='https://accounts.google.com/gsi/client';
+  script.onload=()=>{
+    const client=google.accounts.oauth2.initTokenClient({
+      client_id:GDRIVE_CLIENT_ID,
+      scope:GDRIVE_SCOPE,
+      callback:(resp)=>{
+        if(resp.error){notif('Google sign-in failed');return;}
+        gdriveToken=resp.access_token;
+        gdriveEnabled=true;
+        localStorage.setItem('gdrive_enabled','1');
+        updateGdriveBtn(true);
+        gdriveLoad();
+      }
+    });
+    client.requestAccessToken();
+  };
+  document.head.appendChild(script);
+}
+
+function updateGdriveBtn(on){
+  const btn=document.getElementById('gdrive-btn');
+  if(!btn)return;
+  btn.textContent=on?'☁️ Drive: ON':'☁️ Connect Drive';
+  btn.style.color=on?'var(--green)':'var(--muted)';
+  btn.style.borderColor=on?'rgba(0,229,176,0.4)':'rgba(112,112,160,0.2)';
+  btn.style.background=on?'rgba(0,229,176,0.1)':'none';
+}
+
+async function gdriveLoad(){
+  if(!gdriveToken)return;
+  try{
+    const search=await fetch(`https://www.googleapis.com/drive/v3/files?q=name='${GDRIVE_FILENAME}'&spaces=drive&fields=files(id,name)`,{
+      headers:{Authorization:'Bearer '+gdriveToken}
+    });
+    const result=await search.json();
+    if(result.files&&result.files.length>0){
+      gdriveFileId=result.files[0].id;
+      const dl=await fetch(`https://www.googleapis.com/drive/v3/files/${gdriveFileId}?alt=media`,{
+        headers:{Authorization:'Bearer '+gdriveToken}
+      });
+      const data=await dl.json();
+      if(data.people&&data.clients){
+        localStorage.setItem(SK,JSON.stringify(data));
+        localStorage.setItem(SK_BACKUP,JSON.stringify(data));
+        load();
+        renderDash();renderCompanies();renderPeople();renderClientsPage();renderRevenue();
+        notif('✅ נטען מ-Google Drive');
+      }
+    } else {
+      gdriveAutoSave(localStorage.getItem(SK)||'{}');
+      notif('✅ Google Drive מחובר — גיבוי אוטומטי פעיל');
+    }
+  }catch(e){notif('שגיאה בטעינה מ-Drive');}
+}
+
+async function gdriveAutoSave(dataStr){
+  if(!gdriveToken)return;
+  try{
+    if(gdriveFileId){
+      await fetch(`https://www.googleapis.com/upload/drive/v3/files/${gdriveFileId}?uploadType=media`,{
+        method:'PATCH',
+        headers:{Authorization:'Bearer '+gdriveToken,'Content-Type':'application/json'},
+        body:dataStr
+      });
+    } else {
+      const meta=new Blob([JSON.stringify({name:GDRIVE_FILENAME,mimeType:'application/json'})],{type:'application/json'});
+      const file=new Blob([dataStr],{type:'application/json'});
+      const form=new FormData();
+      form.append('metadata',meta);
+      form.append('file',file);
+      const res=await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',{
+        method:'POST',headers:{Authorization:'Bearer '+gdriveToken},body:form
+      });
+      const f=await res.json();
+      gdriveFileId=f.id;
+    }
+  }catch(e){console.error('Drive save error',e);}
 }
 
 function load(){
@@ -2822,6 +2914,62 @@ function exportToExcel(){
   a.click();
   URL.revokeObjectURL(url);
   notif('Exported ✓');
+}
+
+function backupData(){
+  const data={
+    people:PEOPLE,
+    clients:CLIENTS,
+    companies:COMPANIES,
+    nextId,
+    nextClientId,
+    deletedClientIds:window._deletedClientIds||[],
+    deletedClientNames:[...(window._deletedClientNames||new Set())],
+    backedUpAt:new Date().toISOString()
+  };
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download=`Tailwind_Backup_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  notif('✅ Backup saved');
+}
+
+function restoreData(input){
+  const file=input.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const data=JSON.parse(e.target.result);
+      if(!data.people||!data.clients){
+        notif('❌ Invalid backup file');
+        return;
+      }
+      if(!confirm(`Restore backup from ${data.backedUpAt?new Date(data.backedUpAt).toLocaleDateString('he-IL'):'unknown date'}?\n\nThis will replace all current data.`))return;
+      PEOPLE=data.people;
+      CLIENTS=data.clients;
+      if(data.companies&&data.companies.length){
+        data.companies.forEach(saved=>{
+          const idx=COMPANIES.findIndex(c=>c.id===saved.id);
+          if(idx!==-1)['name','desc','website','commissionPct'].forEach(f=>{if(saved[f]!==undefined)COMPANIES[idx][f]=saved[f];});
+        });
+      }
+      nextId=data.nextId||nextId;
+      nextClientId=data.nextClientId||nextClientId;
+      window._deletedClientIds=data.deletedClientIds||[];
+      window._deletedClientNames=new Set(data.deletedClientNames||[]);
+      save();
+      renderDash();renderCompanies();renderPeople();renderClientsPage();renderRevenue();
+      notif('✅ Restored successfully');
+    }catch(err){
+      notif('❌ Error reading backup file');
+    }
+  };
+  reader.readAsText(file);
+  input.value='';
 }
 
 function closeOverlay(id){
