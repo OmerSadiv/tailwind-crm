@@ -1180,9 +1180,24 @@ function openAddClient(){
 
     <div class="msec-title" style="margin:14px 0 8px;">👤 Contacts at this company</div>
     <div id="nc-contacts-list"></div>
+
+    <!-- Search from existing People -->
+    <div style="margin-bottom:8px;">
+      <div style="font-size:10px;color:var(--muted);margin-bottom:4px;">שייך מהרשת שלך:</div>
+      <div style="display:flex;gap:8px;">
+        <select id="nc-cperson" style="margin:0;flex:1;">
+          <option value="">— בחר מהרשת —</option>
+          ${PEOPLE.filter(p=>p.id!==0).map(p=>`<option value="${p.id}">${p.name}${p.role?' — '+p.role:''}${p.company?' ('+p.company+')':''}</option>`).join('')}
+        </select>
+        <button class="btn btn-green btn-xs" onclick="addContactFromPeople('nc')">+ שייך</button>
+      </div>
+    </div>
+
+    <!-- Or add manually -->
+    <div style="font-size:10px;color:var(--muted);margin-bottom:4px;">או הוסף ידנית:</div>
     <div style="display:flex;gap:8px;margin-bottom:14px;">
-      <input id="nc-cname" placeholder="Contact name" style="margin:0;flex:1;"/>
-      <input id="nc-crole" placeholder="Role/Title" style="margin:0;width:140px;"/>
+      <input id="nc-cname" placeholder="שם" style="margin:0;flex:1;"/>
+      <input id="nc-crole" placeholder="תפקיד" style="margin:0;width:140px;"/>
       <input id="nc-cemail" placeholder="Email" style="margin:0;width:160px;"/>
       <button class="btn btn-green btn-xs" onclick="addNewClientContact()">+ Add</button>
     </div>
@@ -1330,9 +1345,21 @@ function openClientModal(id){
             <button class="btn btn-red btn-xs" onclick="removeClientContact(${id},${i})">✕</button>
           </div>`).join('')||'<div style="font-size:12px;color:var(--muted2);">No contacts yet</div>'}
       </div>
-      <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
-        <input id="cmadd-cname-${id}" placeholder="Name" style="margin:0;flex:1;min-width:100px;"/>
-        <input id="cmadd-crole-${id}" placeholder="Role" style="margin:0;width:120px;"/>
+      <!-- Link from People -->
+      <div style="margin-top:8px;margin-bottom:6px;">
+        <div style="font-size:10px;color:var(--muted);margin-bottom:4px;">שייך מהרשת:</div>
+        <div style="display:flex;gap:8px;">
+          <select id="cmadd-cperson-${id}" style="margin:0;flex:1;font-size:12px;">
+            <option value="">— בחר מהרשת —</option>
+            ${PEOPLE.filter(p=>p.id!==0).map(p=>`<option value="${p.id}">${p.name}${p.role?' — '+p.role:''}${p.company?' ('+p.company+')':''}</option>`).join('')}
+          </select>
+          <button class="btn btn-green btn-xs" onclick="addContactFromPeople('cm',${id})">+ שייך</button>
+        </div>
+      </div>
+      <!-- Manual add -->
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <input id="cmadd-cname-${id}" placeholder="שם ידני" style="margin:0;flex:1;min-width:100px;"/>
+        <input id="cmadd-crole-${id}" placeholder="תפקיד" style="margin:0;width:120px;"/>
         <input id="cmadd-cemail-${id}" placeholder="Email" style="margin:0;width:160px;"/>
         <button class="btn btn-green btn-xs" onclick="addClientContact(${id})">+ Add</button>
       </div>
@@ -2858,6 +2885,48 @@ document.addEventListener('click',function(e){
     closeGlobalSearch();
   }
 },false);
+
+function addContactFromPeople(mode, clientId){
+  const selId = mode==='nc'
+    ? document.getElementById('nc-cperson').value
+    : document.getElementById(`cmadd-cperson-${clientId}`).value;
+  if(!selId) return;
+
+  const person = PEOPLE.find(x=>String(x.id)===String(selId));
+  if(!person) return;
+
+  const contact = {
+    name: person.name,
+    role: person.role||'',
+    email: person.email||''
+  };
+
+  if(mode==='nc'){
+    // Add new client form
+    if(!window._newClientContacts) window._newClientContacts=[];
+    window._newClientContacts.push(contact);
+    const list=document.getElementById('nc-contacts-list');
+    list.innerHTML+=`<div style="font-size:12px;padding:4px 8px;background:var(--surf2);border-radius:6px;margin-bottom:4px;">
+      ${contact.name}${contact.role?' · '+contact.role:''}
+    </div>`;
+    document.getElementById('nc-cperson').value='';
+    notif(`${person.name} שויך ✓`);
+  } else {
+    // Edit client modal
+    const c=CLIENTS.find(x=>x.id===clientId);
+    if(!c) return;
+    if(!c.contacts) c.contacts=[];
+    // Avoid duplicates
+    if(c.contacts.some(ct=>ct.name===contact.name)){
+      notif(`${person.name} כבר קיים`);
+      return;
+    }
+    c.contacts.push(contact);
+    save();
+    openClientModal(clientId);
+    notif(`${person.name} שויך ✓`);
+  }
+}
 
 function deleteClientFromPeople(id){
   if(!confirm('Remove this client?'))return;
