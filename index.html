@@ -1258,6 +1258,33 @@ function addNewClientPartner(){
   list.innerHTML+= `<div style="font-size:12px;padding:4px 8px;background:var(--surf2);border-radius:6px;margin-bottom:4px;">${name} — ${pct}%</div>`;
 }
 
+
+function addContactToPeople(contact, clientName, portfolioCo){
+  // Check if already exists in PEOPLE by name
+  const exists=PEOPLE.find(p=>p.name.toLowerCase()===contact.name.toLowerCase());
+  if(exists)return; // Already there
+  PEOPLE.push({
+    id:nextId++,
+    name:contact.name,
+    type:'contact',
+    role:contact.role||'',
+    company:clientName||'',
+    geo:'',
+    email:contact.email||'',
+    companies:portfolioCo?[portfolioCo]:[],
+    strength:3,
+    status:'initial',
+    parentId:null,
+    dualRole:null,
+    companyStatus:{},
+    clientsByCompany:{},
+    potentialsByCompany:{},
+    clientData:{},
+    commissions:{},
+    notes:'Added via client: '+clientName
+  });
+}
+
 function addNewClientContact(){
   const name=document.getElementById('nc-cname').value.trim();if(!name)return;
   const role=document.getElementById('nc-crole').value.trim();
@@ -1274,6 +1301,8 @@ function saveNewClient(){
   const name=document.getElementById('nc-name').value.trim();
   const co=document.getElementById('nc-co').value;
   if(!name||!co){notif('Name and Portfolio Company required');return;}
+  // Add contacts to People
+  (window._newClientContacts||[]).forEach(ct=>addContactToPeople(ct,name,co));
   const client={
     id:nextClientId++,
     name,
@@ -1451,7 +1480,10 @@ function addClientContact(id){
   const role=document.getElementById(`cmadd-crole-${id}`).value.trim();
   const email=document.getElementById(`cmadd-cemail-${id}`).value.trim();
   if(!c.contacts)c.contacts=[];
-  c.contacts.push({name,role,email});
+  const contact={name,role,email};
+  c.contacts.push(contact);
+  // Also add to People
+  addContactToPeople(contact,c.name,c.portfolioCo);
   save();openClientModal(id);notif(`${name} added ✓`);
 }
 
