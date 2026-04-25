@@ -3450,4 +3450,460 @@ function exportToExcel(){
   CLIENTS.forEach(c=>{
     const partners=(c.partnerIds||[]).map(pp=>`${resolvePartnerName(pp.pid)} ${pp.pct?pp.pct+'%':''}`).join(', ');
     const contacts=(c.contacts||[]).map(ct=>ct.name+(ct.role?' ('+ct.role+')':'')).join(', ');
-    const stageD
+    const stageDef=CLIENT_STAGES.find(s=>s.id===c.stage)||CLIENT_STAGES[0];
+    rows.push([c.name,c.portfolioCo,c.sector||'',stageDef.label,c.payment||0,partners,contacts,c.notes||'']);
+  });
+
+  rows.push([]);
+  rows.push(['=== PEOPLE ===']);
+  rows.push(['Name','Type','Role','Company','Geo','Status','Companies','Strength','Notes']);
+  PEOPLE.forEach(p=>{
+    rows.push([p.name,tl(p.type),p.role,p.company,p.geo,sl(p.status),(p.companies||[]).join(', '),p.strength||0,p.notes||'']);
+  });
+
+  // Build CSV
+  const csv=rows.map(r=>r.map(cell=>{
+    const s=String(cell).replace(/"/g,'""');
+    return s.includes(',')||s.includes('"')||s.includes('\n')?`"${s}"`:s;
+  }).join(',')).join('\n');
+
+  // Add BOM for Hebrew support in Excel
+  const bom='\uFEFF';
+  const blob=new Blob([bom+csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download=`Tailwind_CRM_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  notif('Exported ✓');
+}
+
+function backupData(){
+  const data={
+    people:PEOPLE,
+    clients:CLIENTS,
+    companies:COMPANIES,
+    nextId,
+    nextClientId,
+    deletedClientIds:window._deletedClientIds||[],
+    deletedClientNames:[...(window._deletedClientNames||new Set())],
+    backedUpAt:new Date().toISOString()
+  };
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download=`Tailwind_Backup_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  notif('✅ Backup saved');
+}
+
+function restoreData(input){
+  const file=input.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const data=JSON.parse(e.target.result);
+      if(!data.people||!data.clients){
+        notif('❌ Invalid backup file');
+        return;
+      }
+      if(!confirm(`Restore backup from ${data.backedUpAt?new Date(data.backedUpAt).toLocaleDateString('he-IL'):'unknown date'}?\n\nThis will replace all current data.`))return;
+      PEOPLE=data.people;
+      CLIENTS=data.clients;
+      if(data.companies&&data.companies.length){
+        data.companies.forEach(saved=>{
+          const idx=COMPANIES.findIndex(c=>c.id===saved.id);
+          if(idx!==-1)['name','desc','website','commissionPct'].forEach(f=>{if(saved[f]!==undefined)COMPANIES[idx][f]=saved[f];});
+        });
+      }
+      nextId=data.nextId||nextId;
+      nextClientId=data.nextClientId||nextClientId;
+      window._deletedClientIds=data.deletedClientIds||[];
+      window._deletedClientNames=new Set(data.deletedClientNames||[]);
+      save();
+      renderDash();renderCompanies();renderPeople();renderClientsPage();renderRevenue();
+      notif('✅ Restored successfully');
+    }catch(err){
+      notif('❌ Error reading backup file');
+    }
+  };
+  reader.readAsText(file);
+  input.value='';
+}
+
+function closeOverlay(id){
+  document.getElementById(id).classList.remove('open');
+  renderDash();
+  renderCompanies();
+  renderPeople();
+}
+function closeBg(e,id){if(e.target===document.getElementById(id))closeOverlay(id);}
+
+// ============================================================
+// PDF & WEBSITE
+// ============================================================
+const PDF_SK='tailwind_pdfs_v1';
+
+function getPdfs(coId){
+  try{const r=localStorage.getItem(PDF_SK);return r?JSON.parse(r)[coId]||[]:[]}catch(e){return[];}
+}
+function savePdf(coId,pdf){
+  try{
+    const all=JSON.parse(localStorage.getItem(PDF_SK)||'{}');
+    if(!all[coId])all[coId]=[];
+    all[coId].push(pdf);
+    localStorage.setItem(PDF_SK,JSON.stringify(all));
+  }catch(e){notif('Error — הfile גדול מדי');}
+}
+function deletePdf(coId,idx){
+  try{
+    const all=JSON.parse(localStorage.getItem(PDF_SK)||'{}');
+    if(all[coId])all[coId].splice(idx,1);
+    localStorage.setItem(PDF_SK,JSON.stringify(all));
+    document.getElementById(`pdf-list-${coId}`).innerHTML=renderPdfList(coId);
+    notif('file Removed');
+  }catch(e){}
+}
+function renderPdfList(coId){
+  const pdfs=getPdfs(coId);
+  if(!pdfs.length)return`<div style="font-size:12px;color:var(--muted2);padding:4px 0;">No files untilיין</div>`;
+  return pdfs.map((p,i)=>`
+    <div class="pdf-item">
+      <div class="pdf-item-left" onclick="viewPdf('${p.name}','${coId}',${i})">
+        <span style="font-size:18px;">📄</span>
+        <div>
+          <div class="pdf-item-name">${p.name}</div>
+          <div class="pdf-item-size">${p.size}</div>
+        </div>
+      </div>
+      <button class="btn btn-red btn-xs" onclick="deletePdf('${coId}',${i})">✕</button>
+    </div>`).join('');
+}
+function uploadPdf(coId,input){
+  const file=input.files[0];if(!file)return;
+  if(file.size>5*1024*1024){notif('file גדול מדי — max 5MB');return;}
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const size=(file.size/1024).toFixed(0)+'KB';
+    savePdf(coId,{name:file.name,size,data:e.target.result});
+    document.getElementById(`pdf-list-${coId}`).innerHTML=renderPdfList(coId);
+    notif(`${file.name} הוonה ✓`);
+  };
+  reader.readAsDataURL(file);
+  input.value='';
+}
+function viewPdf(name,coId,idx){
+  const pdfs=getPdfs(coId);
+  const pdf=pdfs[idx];if(!pdf)return;
+  document.getElementById('pdf-viewer-name').textContent=name;
+  document.getElementById('pdf-viewer-frame').src=pdf.data;
+  document.getElementById('pdf-viewer').style.display='flex';
+}
+function closePdfViewer(){
+  document.getElementById('pdf-viewer').style.display='none';
+  document.getElementById('pdf-viewer-frame').src='';
+}
+function switchLeadTab(tab){
+  document.getElementById('tab-linkedin').style.display=tab==='linkedin'?'block':'none';
+  document.getElementById('tab-crm').style.display=tab==='crm'?'block':'none';
+  const lBtn=document.getElementById('tab-linkedin-btn');
+  const cBtn=document.getElementById('tab-crm-btn');
+  if(tab==='linkedin'){
+    lBtn.style.background='var(--accent)';lBtn.style.color='white';lBtn.style.borderColor='var(--accent)';
+    cBtn.style.background='var(--surf)';cBtn.style.color='var(--muted)';cBtn.style.borderColor='var(--border)';
+  }else{
+    cBtn.style.background='var(--accent)';cBtn.style.color='white';cBtn.style.borderColor='var(--accent)';
+    lBtn.style.background='var(--surf)';lBtn.style.color='var(--muted)';lBtn.style.borderColor='var(--border)';
+  }
+}
+
+async function runCRMLeads(){
+  const co=document.getElementById('crm-co').value;
+  const type=document.getElementById('crm-goal').value;
+  const out=document.getElementById('crm-lead-out');
+  if(!co){notif('בחר חברה תחילה');return;}
+  out.innerHTML=`<div style="text-align:center;padding:40px;color:var(--muted);"><div class="spinner" style="margin:0 auto 12px;"></div>מנתח רשת...</div>`;
+  const coData=COMPANIES.find(c=>c.name===co);
+  const peopleSummary=PEOPLE.filter(p=>p.id!==0).map(p=>
+    `${p.name} | ${p.type} | ${p.role} | ${p.company} | ${p.geo} | companies: ${(p.companies||[]).join(',')} | strength: ${p.strength||0}`
+  ).join('\n');
+  try{
+    const res=await fetch(WORKER_URL,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-haiku-4-5-20251001',
+        max_tokens:1500,
+        system:`Return ONLY a valid JSON array. Each item: {"name":"...","role":"...","company":"...","score":1-10,"why":"1 sentence why they fit","action":"specific next step"}`,
+        messages:[{role:'user',content:`Find best matches in this CRM network for ${co} (${coData?.desc||''}) looking for ${type}. Return TOP 8 as JSON array.\n\n${peopleSummary}`}]
+      })
+    });
+    const data=await res.json();
+    const text=data.content?.map(i=>i.text||'').join('')||'';
+    let matches=[];
+    const start=text.indexOf('[');const end=text.lastIndexOf(']');
+    if(start!==-1&&end!==-1)matches=JSON.parse(text.slice(start,end+1).replace(/[\u0000-\u001f\u007f]/g,' '));
+    out.innerHTML=`
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--accent);margin-bottom:14px;">
+        🎯 ${matches.length} התאמות מהרשת — ${co}
+      </div>
+      ${matches.map(m=>{
+        const sc=m.score>=8?'#00e5b0':m.score>=6?'#7c6fff':'#ffd166';
+        return`<div style="background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:10px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <div><span style="font-size:14px;font-weight:700;">${m.name}</span>
+            <span style="font-size:11px;color:var(--accent);margin-left:8px;">${m.role||''} @ ${m.company||''}</span></div>
+            <span style="background:${sc}22;color:${sc};border:1px solid ${sc}44;border-radius:8px;padding:2px 8px;font-size:11px;font-weight:700;">${m.score}/10</span>
+          </div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">${m.why||''}</div>
+          <div style="font-size:12px;color:var(--yellow);">→ ${m.action||''}</div>
+        </div>`;
+      }).join('')}`;
+  }catch(e){out.innerHTML=`<div style="color:var(--red);padding:20px;">שגיאה — נסה שוב</div>`;}
+}
+
+async function scanCompany(coId){
+  const co=COMPANIES.find(c=>c.id===coId);if(!co)return;
+  const resultEl=document.getElementById('scan-result-'+coId);
+  if(!co.website){resultEl.textContent='אין אתר מוגדר — הוסף קודם כתובת אתר';return;}
+  resultEl.innerHTML='<span style="color:var(--accent)">🔍 סורק...</span>';
+  try{
+    const res=await fetch(WORKER_URL,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-haiku-4-5-20251001',
+        max_tokens:800,
+        tools:[{type:'web_search_20250305',name:'web_search'}],
+        system:`You are a research assistant. Search for info about the company and return ONLY a JSON object with these fields:
+{"desc":"what the company does in 1-2 sentences","clients":"key clients or target market","raised":"funding info if any","category":"industry category","icp":"ideal customer profile — who buys this product, their title and industry"}
+Return ONLY valid JSON, no markdown.`,
+        messages:[{role:'user',content:`Search for latest info about ${co.name} (${co.website}). What do they do, who are their clients, any recent news or funding?`}]
+      })
+    });
+    const data=await res.json();
+    const text=data.content?.filter(i=>i.type==='text').map(i=>i.text||'').join('')||'';
+    let info;
+    try{
+      const start=text.indexOf('{');const end=text.lastIndexOf('}');
+      info=JSON.parse(text.slice(start,end+1));
+    }catch(e){resultEl.innerHTML='<span style="color:var(--red)">לא הצלחתי לפרסר — נסה שוב</span>';return;}
+    // Update company fields
+    if(info.desc)co.desc=info.desc;
+    if(info.clients)co.clients=info.clients;
+    if(info.raised&&info.raised!=='—')co.raised=info.raised;
+    if(info.category)co.category=info.category;
+    if(info.icp)co.icp=info.icp;
+    co.lastScanned=new Date().toLocaleDateString('he-IL');
+    notif(`${co.name} עודכן ✓`);
+    resultEl.innerHTML=`<span style="color:var(--green)">✓ עודכן ${co.lastScanned}</span>${info.icp?` — ICP: ${info.icp.slice(0,80)}...`:''}`;
+    openCompanyModal(coId);
+  }catch(e){
+    resultEl.innerHTML='<span style="color:var(--red)">שגיאה — נסה שוב</span>';
+    console.error(e);
+  }
+}
+
+function editCoWebsite(coId){
+  const url=prompt('Enter website URL:','https://');
+  if(!url||url==='https://')return;
+  const co=COMPANIES.find(c=>c.id===coId);if(!co)return;
+  co.website=url;
+  notif('אתר Updated ✓');
+  openCompanyModal(coId);
+}
+let chatHistory=[];
+
+function toggleFloatChat(){
+  const win=document.getElementById('float-chat-window');
+  const btn=document.getElementById('float-btn');
+  const isOpen=win.style.display==='flex';
+  win.style.display=isOpen?'none':'flex';
+  btn.textContent=isOpen?'💬':'×';
+  if(!isOpen){
+    setTimeout(()=>document.getElementById('float-input')?.focus(),100);
+  }
+}
+
+function addFloatMsg(text,type,id){
+  const msgs=document.getElementById('float-messages');
+  if(!msgs)return;
+  const div=document.createElement('div');
+  div.className='chat-msg '+type;
+  div.textContent=text;
+  if(id)div.id=id;
+  msgs.appendChild(div);
+  msgs.scrollTop=msgs.scrollHeight;
+}
+
+async function sendFloatChat(){
+  const input=document.getElementById('float-input');
+  const msg=input.value.trim();if(!msg)return;
+  input.value='';
+  addFloatMsg(msg,'user');
+  chatHistory.push({role:'user',content:msg});
+  const loadId='fload-'+Date.now();
+  addFloatMsg('…','ai loading',loadId);
+  try{
+    const res=await fetch(WORKER_URL,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:800,system:buildContext(),messages:chatHistory})
+    });
+    const data=await res.json();
+    const reply=data.content.map(i=>i.text||'').join('').trim();
+    chatHistory.push({role:'assistant',content:reply});
+    const loadEl=document.getElementById(loadId);
+    if(!loadEl)return;
+    try{
+      const clean=reply.replace(/```json|```/g,'').trim();
+      if(clean.startsWith('{')){
+        const action=JSON.parse(clean);
+        loadEl.className='chat-msg ai';
+        loadEl.innerHTML='';
+        loadEl.appendChild(buildActionCard(action));
+        return;
+      }
+    }catch(e){}
+    loadEl.textContent=reply;
+    loadEl.classList.remove('loading');
+  }catch(e){
+    const loadEl=document.getElementById(loadId);
+    if(loadEl){loadEl.textContent='Error — please try again';loadEl.style.color='var(--red)';}
+  }
+  }
+}
+
+// Keep sendChat for backward compat (now delegates to float)
+function sendChat(){sendFloatChat();}
+
+function buildContext(){
+  const companySummary=COMPANIES.map(co=>{
+    const people=PEOPLE.filter(p=>p.companies&&p.companies.includes(co.name));
+    const clients=CLIENTS.filter(c=>c.portfolioCo===co.name);
+    const clientNames=clients.map(c=>c.name+'('+c.stage+')').join(', ');
+    return co.name+' ('+co.category+', '+co.commissionPct+'% comm): partners=['+people.map(p=>p.name).join(', ')+'], clients=['+clientNames+']';
+  }).join('\n');
+  const peopleSummary=PEOPLE.map(p=>'id:'+p.id+' | '+p.name+' | '+tl(p.type)+' | '+p.role+' | '+p.company+' | '+p.geo+' | status:'+sl(p.status)+' | companies:'+((p.companies||[]).join(','))).join('\n');
+  const companyNames=COMPANIES.map(c=>c.name).join(', ');
+  const instructions=[
+    'You are an AI assistant for Tailwind CRM (Omer Sadiv, Israeli BD firm).',
+    'PORTFOLIO COMPANIES: '+companyNames,
+    'COMPANIES DETAIL: '+companySummary,
+    'PEOPLE IN CRM: '+peopleSummary,
+    'INSTRUCTIONS:',
+    '- Answer questions concisely in Hebrew or English based on user language',
+    '- To ADD a person respond ONLY with JSON: action=add_person, fields: name,type,role,company,geo,companies,status,notes',
+    '- To UPDATE status respond ONLY with JSON: action=update_status, fields: personId,personName,newStatus',
+    '- To ADD CLIENT respond ONLY with JSON: action=add_client, fields: personId,personName,company,clientName,clientType',
+    'For actions return ONLY valid JSON. For questions return only text.'
+  ].join('\n');
+  return instructions;
+}
+
+function buildActionCard(action){
+  const wrap=document.createElement('div');
+  if(action.action==='add_person'){
+    wrap.innerHTML=`
+      <div class="action-card">
+        <div class="action-card-title">➕ Add to CRM — confirm?</div>
+        <div class="action-field"><span class="action-field-label">Name</span><span class="action-field-value">${action.name||'—'}</span></div>
+        <div class="action-field"><span class="action-field-label">Type</span><span class="action-field-value">${action.type||'partner'}</span></div>
+        <div class="action-field"><span class="action-field-label">Role</span><span class="action-field-value">${action.role||'—'}</span></div>
+        <div class="action-field"><span class="action-field-label">Company</span><span class="action-field-value">${action.company||'—'}</span></div>
+        <div class="action-field"><span class="action-field-label">Location</span><span class="action-field-value">${action.geo||'—'}</span></div>
+        <div class="action-field"><span class="action-field-label">For</span><span class="action-field-value">${(action.companies||[]).join(', ')||'—'}</span></div>
+        <div class="action-field"><span class="action-field-label">Status</span><span class="action-field-value">${sl(action.status||'initial')}</span></div>
+        ${action.notes?`<div class="action-field"><span class="action-field-label">Notes</span><span class="action-field-value">${action.notes}</span></div>`:''}
+        <div class="action-btns">
+          <button class="btn btn-primary btn-sm" onclick="confirmAction(${JSON.stringify(action).replace(/"/g,'&quot;')})">✓ Confirm — Add</button>
+          <button class="btn btn-ghost btn-sm" onclick="this.closest('.action-card').innerHTML='<span style=color:var(--muted)>Cancelled</span>'">✕ Cancel</button>
+        </div>
+      </div>`;
+  } else if(action.action==='update_status'){
+    wrap.innerHTML=`
+      <div class="action-card">
+        <div class="action-card-title">🔄 Update Status — confirm?</div>
+        <div class="action-field"><span class="action-field-label">Person</span><span class="action-field-value">${action.personName||'—'}</span></div>
+        <div class="action-field"><span class="action-field-label">New Status</span><span class="action-field-value">${sl(action.newStatus||'initial')}</span></div>
+        <div class="action-btns">
+          <button class="btn btn-primary btn-sm" onclick="confirmAction(${JSON.stringify(action).replace(/"/g,'&quot;')})">✓ Confirm</button>
+          <button class="btn btn-ghost btn-sm" onclick="this.closest('.action-card').innerHTML='<span style=color:var(--muted)>Cancelled</span>'">✕ Cancel</button>
+        </div>
+      </div>`;
+  } else if(action.action==='add_client'){
+    wrap.innerHTML=`
+      <div class="action-card">
+        <div class="action-card-title">🤝 Add Client — confirm?</div>
+        <div class="action-field"><span class="action-field-label">Partner</span><span class="action-field-value">${action.personName||'—'}</span></div>
+        <div class="action-field"><span class="action-field-label">Company</span><span class="action-field-value">${action.company||'—'}</span></div>
+        <div class="action-field"><span class="action-field-label">Client</span><span class="action-field-value">${action.clientName||'—'}</span></div>
+        <div class="action-field"><span class="action-field-label">Type</span><span class="action-field-value">${action.clientType==='signed'?'✅ Signed':'🎯 Prospect'}</span></div>
+        <div class="action-btns">
+          <button class="btn btn-primary btn-sm" onclick="confirmAction(${JSON.stringify(action).replace(/"/g,'&quot;')})">✓ Confirm</button>
+          <button class="btn btn-ghost btn-sm" onclick="this.closest('.action-card').innerHTML='<span style=color:var(--muted)>Cancelled</span>'">✕ Cancel</button>
+        </div>
+      </div>`;
+  } else {
+    wrap.innerHTML=`<div class="chat-msg ai">${JSON.stringify(action,null,2)}</div>`;
+  }
+  return wrap;
+}
+
+function confirmAction(actionStr){
+  let action;
+  try{action=typeof actionStr==='string'?JSON.parse(actionStr.replace(/&quot;/g,'"')):actionStr;}
+  catch(e){notif('Error parsing action');return;}
+
+  if(action.action==='add_person'){
+    PEOPLE.push({
+      id:nextId++,
+      name:action.name,
+      type:action.type||'partner',
+      role:action.role||'—',
+      company:action.company||'—',
+      geo:action.geo||'—',
+      companies:action.companies||[],
+      strength:3,
+      status:action.status||'initial',
+      parentId:null,dualRole:null,
+      companyStatus:{},clientsByCompany:{},potentialsByCompany:{},
+      clientData:{},commissions:{},
+      notes:action.notes||''
+    });
+    save();renderPeople();renderCompanies();renderDash();
+    addChatMsg(`✓ ${action.name} added to CRM`,'ai');
+    notif(`${action.name} added ✓`);
+  } else if(action.action==='update_status'){
+    const p=PEOPLE.find(x=>x.id===action.personId||x.name===action.personName);
+    if(p){p.status=action.newStatus;save();renderPeople();renderDash();}
+    addChatMsg(`✓ ${action.personName} → ${sl(action.newStatus)}`,'ai');
+    notif('Status updated ✓');
+  } else if(action.action==='add_client'){
+    const co=action.company||'';
+    const stage=action.clientType==='signed'?'contract':'email_sent';
+    const pid=action.personId||action.personName;
+    CLIENTS.push({
+      id:nextClientId++,name:action.clientName,portfolioCo:co,sector:'',
+      stage,payment:0,partnerIds:[{pid:String(pid),pct:0}],contacts:[],
+      notes:'Added via AI assistant',createdAt:Date.now()
+    });
+    save();renderClientsPage();renderDash();
+    addChatMsg(`✓ ${action.clientName} added to ${co}`,'ai');
+    notif(`${action.clientName} added ✓`);
+  }
+
+  // Replace card with success
+  const card=document.querySelector('.action-card');
+  if(card)card.style.borderColor='var(--green)';
+}
+
+function addChatMsg(text,type,id){
+  addFloatMsg(text,type,id);
+}
+</script>
+</body>
+</html>
