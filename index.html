@@ -1126,8 +1126,8 @@ async function runLinkedInMatch(){
       body:JSON.stringify({
         model:'claude-haiku-4-5-20251001',
         max_tokens:1500,
-        system:'Return ONLY a valid JSON array, no other text. Format: [{"name":"...","title":"...","company":"...","why":"1 sentence why they fit","action":"specific first step"}]',
-        messages:[{role:'user',content:'BD advisor for Tailwind. Company: '+co+'. Goal: '+goal+'. Find TOP 10 most relevant people. Return ONLY JSON array.\\n\\n'+sample}]
+        system:'Return ONLY a JSON array. No other text. Each item has: name, title, company, why, action.',
+        messages:[{role:'user',content:'Tailwind BD. Company: '+co+'. Goal: '+goal+'. Top 10 matches. JSON array only.\n'+sample}]
       })
     });
     const data=await res.json();
