@@ -2020,9 +2020,11 @@ function openCompanyModal(coId){
     <div class="modal-sub">${co.category}</div>
 
     <!-- WEBSITE + PDF -->
-    <div class="co-links">
+    <div class="co-links" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
       ${co.website?`<a class="co-link-btn co-link-website" href="${co.website}" target="_blank">🌐 ${co.website}</a>`:`<button class="co-link-btn" style="background:var(--surf2);border:1px solid var(--border);color:var(--muted);" onclick="editCoWebsite('${co.id}')">🌐 Add אתר</button>`}
+      <button onclick="scanCompany('${co.id}')" style="padding:6px 12px;background:var(--surf2);border:1px solid var(--border);border-radius:8px;color:var(--accent);cursor:pointer;font-size:12px;">🔍 Scan & Update</button>
     </div>
+    <div id="scan-result-${co.id}" style="font-size:12px;color:var(--muted);margin-top:6px;"></div>
 
     <div class="msec">
       <div class="msec-title">📎 Presentations & Files</div>
@@ -3563,6 +3565,48 @@ function closePdfViewer(){
   document.getElementById('pdf-viewer').style.display='none';
   document.getElementById('pdf-viewer-frame').src='';
 }
+async function scanCompany(coId){
+  const co=COMPANIES.find(c=>c.id===coId);if(!co)return;
+  const resultEl=document.getElementById('scan-result-'+coId);
+  if(!co.website){resultEl.textContent='אין אתר מוגדר — הוסף קודם כתובת אתר';return;}
+  resultEl.innerHTML='<span style="color:var(--accent)">🔍 סורק...</span>';
+  try{
+    const res=await fetch(WORKER_URL,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-haiku-4-5-20251001',
+        max_tokens:800,
+        tools:[{type:'web_search_20250305',name:'web_search'}],
+        system:`You are a research assistant. Search for info about the company and return ONLY a JSON object with these fields:
+{"desc":"what the company does in 1-2 sentences","clients":"key clients or target market","raised":"funding info if any","category":"industry category","icp":"ideal customer profile — who buys this product, their title and industry"}
+Return ONLY valid JSON, no markdown.`,
+        messages:[{role:'user',content:`Search for latest info about ${co.name} (${co.website}). What do they do, who are their clients, any recent news or funding?`}]
+      })
+    });
+    const data=await res.json();
+    const text=data.content?.filter(i=>i.type==='text').map(i=>i.text||'').join('')||'';
+    let info;
+    try{
+      const start=text.indexOf('{');const end=text.lastIndexOf('}');
+      info=JSON.parse(text.slice(start,end+1));
+    }catch(e){resultEl.innerHTML='<span style="color:var(--red)">לא הצלחתי לפרסר — נסה שוב</span>';return;}
+    // Update company fields
+    if(info.desc)co.desc=info.desc;
+    if(info.clients)co.clients=info.clients;
+    if(info.raised&&info.raised!=='—')co.raised=info.raised;
+    if(info.category)co.category=info.category;
+    if(info.icp)co.icp=info.icp;
+    co.lastScanned=new Date().toLocaleDateString('he-IL');
+    notif(`${co.name} עודכן ✓`);
+    resultEl.innerHTML=`<span style="color:var(--green)">✓ עודכן ${co.lastScanned}</span>${info.icp?` — ICP: ${info.icp.slice(0,80)}...`:''}`;
+    openCompanyModal(coId);
+  }catch(e){
+    resultEl.innerHTML='<span style="color:var(--red)">שגיאה — נסה שוב</span>';
+    console.error(e);
+  }
+}
+
 function editCoWebsite(coId){
   const url=prompt('Enter website URL:','https://');
   if(!url||url==='https://')return;
