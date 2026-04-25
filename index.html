@@ -271,9 +271,9 @@ hr{border:none;border-top:1px solid var(--border);margin:16px 0;}
   <div class="nav-item" onclick="nav('clients')"><span>🤝</span> Clients</div>
   <div class="nav-item" onclick="nav('revenue')"><span>💰</span> My Revenue</div>
   <div class="nav-group">AI Tools</div>
-  <div class="nav-item" onclick="nav('matching')"><span>🎯</span> Matching</div>
-  <div class="nav-item" onclick="nav('leads')"><span>🔍</span> Lead Finder</div>
-  <div class="nav-item" onclick="nav('linkedin')"><span>🔗</span> LinkedIn Import</div>
+
+
+  <div class="nav-item" onclick="nav('linkedin')"><span>🎯</span> Smart Leads</div>
   <div class="nav-item" onclick="nav('ai')"><span>💬</span> AI Assistant</div>
   <div class="sidebar-footer">
     Tailwind · Omer Sadiv
@@ -496,8 +496,23 @@ hr{border:none;border-top:1px solid var(--border);margin:16px 0;}
 
 <!-- LINKEDIN IMPORT -->
 <div class="page" id="page-linkedin">
-  <div class="page-title">🔗 LinkedIn Smart Import</div>
-  <div class="page-sub">Upload your LinkedIn connections and Claude finds the most relevant ones for your portfolio</div>
+  <div class="page-title">🎯 Smart Leads</div>
+  <div class="page-sub">מצא לידים חדשים מ-LinkedIn או מהרשת הקיימת שלך</div>
+  
+  <!-- TABS -->
+  <div style="display:flex;gap:8px;margin-bottom:20px;">
+    <button id="tab-linkedin-btn" onclick="switchLeadTab('linkedin')" 
+      style="padding:8px 18px;border-radius:8px;border:1px solid var(--accent);background:var(--accent);color:white;cursor:pointer;font-size:13px;font-weight:600;">
+      🔗 LinkedIn — חיבורים חדשים
+    </button>
+    <button id="tab-crm-btn" onclick="switchLeadTab('crm')"
+      style="padding:8px 18px;border-radius:8px;border:1px solid var(--border);background:var(--surf);color:var(--muted);cursor:pointer;font-size:13px;">
+      👥 רשת קיימת — CRM
+    </button>
+  </div>
+
+  <!-- LINKEDIN TAB -->
+  <div id="tab-linkedin">
 
   <!-- HOW TO GET THE FILE -->
   <div style="background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:20px;">
@@ -545,6 +560,33 @@ hr{border:none;border-top:1px solid var(--border);margin:16px 0;}
 
   <!-- RESULTS -->
   <div id="li-results"></div>
+  </div><!-- end tab-linkedin -->
+
+  <!-- CRM TAB -->
+  <div id="tab-crm" style="display:none;">
+    <div class="card" style="margin-bottom:16px;">
+      <div class="form-row">
+        <div class="field"><label>Portfolio Company</label>
+          <select id="crm-co" style="margin:0;">
+            <option value="">— Choose —</option>
+            <option>Limy AI</option><option>Blings</option><option>Cytrix</option>
+            <option>VISITT</option><option>Sency AI</option><option>Shavit Group</option>
+            <option>Jessica Energy</option><option>Enabley</option><option>RePower</option>
+          </select>
+        </div>
+        <div class="field"><label>מחפש</label>
+          <select id="crm-goal" style="margin:0;">
+            <option value="partner">Channel Partner</option>
+            <option value="client">Enterprise Client</option>
+            <option value="investor">Investor</option>
+            <option value="any">Any</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="runCRMLeads()">🎯 Find in Network</button>
+    </div>
+    <div id="crm-lead-out"></div>
+  </div>
 </div>
 
 <!-- MATCHING -->
@@ -3565,6 +3607,68 @@ function closePdfViewer(){
   document.getElementById('pdf-viewer').style.display='none';
   document.getElementById('pdf-viewer-frame').src='';
 }
+function switchLeadTab(tab){
+  document.getElementById('tab-linkedin').style.display=tab==='linkedin'?'block':'none';
+  document.getElementById('tab-crm').style.display=tab==='crm'?'block':'none';
+  const lBtn=document.getElementById('tab-linkedin-btn');
+  const cBtn=document.getElementById('tab-crm-btn');
+  if(tab==='linkedin'){
+    lBtn.style.background='var(--accent)';lBtn.style.color='white';lBtn.style.borderColor='var(--accent)';
+    cBtn.style.background='var(--surf)';cBtn.style.color='var(--muted)';cBtn.style.borderColor='var(--border)';
+  }else{
+    cBtn.style.background='var(--accent)';cBtn.style.color='white';cBtn.style.borderColor='var(--accent)';
+    lBtn.style.background='var(--surf)';lBtn.style.color='var(--muted)';lBtn.style.borderColor='var(--border)';
+  }
+}
+
+async function runCRMLeads(){
+  const co=document.getElementById('crm-co').value;
+  const type=document.getElementById('crm-goal').value;
+  const out=document.getElementById('crm-lead-out');
+  if(!co){notif('בחר חברה תחילה');return;}
+  out.innerHTML=`<div style="text-align:center;padding:40px;color:var(--muted);"><div class="spinner" style="margin:0 auto 12px;"></div>מנתח רשת...</div>`;
+  const coData=COMPANIES.find(c=>c.name===co);
+  const peopleSummary=PEOPLE.filter(p=>p.id!==0).map(p=>
+    `${p.name} | ${p.type} | ${p.role} | ${p.company} | ${p.geo} | companies: ${(p.companies||[]).join(',')} | strength: ${p.strength||0}`
+  ).join('
+');
+  try{
+    const res=await fetch(WORKER_URL,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-haiku-4-5-20251001',
+        max_tokens:1500,
+        system:`Return ONLY a valid JSON array. Each item: {"name":"...","role":"...","company":"...","score":1-10,"why":"1 sentence why they fit","action":"specific next step"}`,
+        messages:[{role:'user',content:`Find best matches in this CRM network for ${co} (${coData?.desc||''}) looking for ${type}. Return TOP 8 as JSON array.
+
+${peopleSummary}`}]
+      })
+    });
+    const data=await res.json();
+    const text=data.content?.map(i=>i.text||'').join('')||'';
+    let matches=[];
+    const start=text.indexOf('[');const end=text.lastIndexOf(']');
+    if(start!==-1&&end!==-1)matches=JSON.parse(text.slice(start,end+1).replace(/[ -]/g,' '));
+    out.innerHTML=`
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--accent);margin-bottom:14px;">
+        🎯 ${matches.length} התאמות מהרשת — ${co}
+      </div>
+      ${matches.map(m=>{
+        const sc=m.score>=8?'#00e5b0':m.score>=6?'#7c6fff':'#ffd166';
+        return`<div style="background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:10px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <div><span style="font-size:14px;font-weight:700;">${m.name}</span>
+            <span style="font-size:11px;color:var(--accent);margin-left:8px;">${m.role||''} @ ${m.company||''}</span></div>
+            <span style="background:${sc}22;color:${sc};border:1px solid ${sc}44;border-radius:8px;padding:2px 8px;font-size:11px;font-weight:700;">${m.score}/10</span>
+          </div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">${m.why||''}</div>
+          <div style="font-size:12px;color:var(--yellow);">→ ${m.action||''}</div>
+        </div>`;
+      }).join('')}`;
+  }catch(e){out.innerHTML=`<div style="color:var(--red);padding:20px;">שגיאה — נסה שוב</div>`;}
+}
+
 async function scanCompany(coId){
   const co=COMPANIES.find(c=>c.id===coId);if(!co)return;
   const resultEl=document.getElementById('scan-result-'+coId);
