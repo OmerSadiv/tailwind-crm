@@ -688,6 +688,7 @@ let nextId=22;
 let nextClientId=100;
 let pFilter='all';
 const SK='tailwind_v4';
+const WORKER_URL='https://bold-sky-bf7a.omersadiv.workers.dev';
 const GDRIVE_CLIENT_ID='578804457261-itfn1dkp0ap51mdeootq0qq576ng59us.apps.googleusercontent.com';
 const GDRIVE_SCOPE='https://www.googleapis.com/auth/drive.file';
 const GDRIVE_FILENAME='tailwind_crm_data.json';
@@ -1059,13 +1060,82 @@ function keywordFilter(rows){
 
 async function runLinkedInMatch(){
   const results=document.getElementById('li-results');
-  results.innerHTML=`<div style="background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:32px;text-align:center;">
-    <div style="font-size:32px;margin-bottom:12px;">🚀</div>
-    <div style="font-size:16px;font-weight:700;margin-bottom:8px;">Coming Soon</div>
-    <div style="font-size:13px;color:var(--muted);max-width:400px;margin:0 auto;line-height:1.6;">
-      LinkedIn AI matching requires a backend server. This feature will be activated in the next version.
-    </div>
-  </div>`;
+  const co=document.getElementById('li-co').value;
+  const goal=document.getElementById('li-goal').value;
+
+  if(!liConnections||!liConnections.length){
+    results.innerHTML=`<div style="color:var(--red);padding:20px;text-align:center;">העלה קובץ LinkedIn CSV תחילה</div>`;
+    return;
+  }
+
+  results.innerHTML=`<div style="text-align:center;padding:40px;color:var(--muted);"><div class="spinner" style="margin:0 auto 12px;"></div>מנתח ${liConnections.length} קשרים…</div>`;
+
+  // Prepare connections summary (limit to 200)
+  const sample=liConnections.slice(0,200).map(r=>{
+    const name=`${r['First Name']||r['first name']||''} ${r['Last Name']||r['last name']||''}`.trim();
+    const title=r['Position']||r['position']||r['Title']||r['title']||'';
+    const company=r['Company']||r['company']||'';
+    return`${name} | ${title} | ${company}`;
+  }).join('\n');
+
+  const coData=COMPANIES.find(c=>c.name===co);
+  const existing=PEOPLE.map(p=>p.name).join(', ');
+
+  try{
+    const res=await fetch(WORKER_URL,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        system:`You are a BD advisor for Tailwind (Omer Sadiv, Israeli BD firm, ex-Pernod Ricard).
+Company: ${co} — ${coData?.desc||coData?.category||''}
+Goal: ${goal}
+Already in CRM: ${existing}
+From the LinkedIn connections below, find the TOP 10 most relevant people.
+Return ONLY JSON array:
+[{"name":"...","title":"...","company":"...","why":"2 sentences","action":"specific intro approach"}]
+Raw JSON only.`,
+        messages:[{role:'user',content:`LinkedIn connections:\n${sample}`}]
+      })
+    });
+    const data=await res.json();
+    const text=data.content?.map(i=>i.text||'').join('')||'';
+    const matches=JSON.parse(text.replace(/```json|```/g,'').trim());
+
+    results.innerHTML=`
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--accent);margin-bottom:14px;">
+        🎯 Top ${matches.length} Matches מ-LinkedIn — ${co}
+      </div>
+      ${matches.map(m=>`
+        <div style="background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:10px;">
+          <div style="margin-bottom:6px;">
+            <span style="font-size:14px;font-weight:700;">${m.name}</span>
+            <span style="font-size:11px;color:var(--accent);margin-left:8px;">${m.title} @ ${m.company}</span>
+          </div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">${m.why}</div>
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div style="font-size:12px;color:var(--yellow);">→ ${m.action}</div>
+            <button class="btn btn-green btn-xs" onclick="addLinkedInMatchTocrm(${JSON.stringify(m).replace(/"/g,'&quot;')})">+ הוסף ל-CRM</button>
+          </div>
+        </div>`).join('')}`;
+  }catch(e){
+    results.innerHTML=`<div style="color:var(--red);padding:20px;text-align:center;">שגיאה — נסה שוב</div>`;
+    console.error(e);
+  }
+}
+
+function addLinkedInMatchTocrm(m){
+  const existing=PEOPLE.find(p=>p.name.toLowerCase()===m.name.toLowerCase());
+  if(existing){notif(`${m.name} כבר קיים ב-CRM`);return;}
+  const coSel=document.getElementById('li-co').value;
+  PEOPLE.push({
+    id:nextId++,name:m.name,type:'contact',role:m.title||'',
+    company:m.company||'',geo:'',companies:coSel?[coSel]:[],
+    strength:3,status:'initial',parentId:null,dualRole:null,
+    companyStatus:{},clientsByCompany:{},potentialsByCompany:{},
+    clientData:{},commissions:{},notes:`מ-LinkedIn — ${m.why}`
+  });
+  save();renderPeople();
+  notif(`${m.name} נוסף ל-CRM ✓`);
 }
 
 function addLinkedInMatch(mStr){
@@ -2703,17 +2773,56 @@ function savePerson(){
 // AI — MATCHING & LEADS
 // ============================================================
 async function runMatching(){
-  const co=document.getElementById('m-co').value,goal=document.getElementById('m-goal').value;
-  if(!co||!goal){notif('Select company and goal');return;}
+  const co=document.getElementById('m-co').value;
+  const goal=document.getElementById('m-goal').value;
+  if(!co||!goal){notif('בחר חברה ומטרה');return;}
   const out=document.getElementById('match-out');
-  out.innerHTML=`<div style="background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:32px;text-align:center;">
-    <div style="font-size:32px;margin-bottom:12px;">🚀</div>
-    <div style="font-size:16px;font-weight:700;margin-bottom:8px;">Coming Soon</div>
-    <div style="font-size:13px;color:var(--muted);max-width:400px;margin:0 auto;line-height:1.6;">
-      AI Matching requires a backend server. This feature will be activated in the next version.<br><br>
-      <span style="color:var(--accent);">For now — use the Search bar at the top to find the best matches manually.</span>
-    </div>
-  </div>`;
+  out.innerHTML=`<div style="text-align:center;padding:40px;color:var(--muted);"><div class="spinner" style="margin:0 auto 12px;"></div>מנתח את הרשת שלך…</div>`;
+
+  const coData=COMPANIES.find(c=>c.name===co);
+  const peopleSummary=PEOPLE.filter(p=>p.id!==0).map(p=>
+    `${p.name} | ${p.type} | ${p.role} | ${p.company} | ${p.geo} | companies: ${(p.companies||[]).join(',')} | strength: ${p.strength||0}`
+  ).join('\n');
+
+  try{
+    const res=await fetch(WORKER_URL,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        system:`You are a BD advisor for Tailwind (Omer Sadiv, Israeli BD firm, ex-Pernod Ricard).
+Portfolio company: ${co} — ${coData?.desc||coData?.category||''}
+Goal: ${goal}
+Return ONLY a JSON array of the 5 best matches from the network below.
+Format: [{"name":"...","reason":"2 sentences why they fit","score":"Strong/High/Medium","action":"specific next step for Omer"}]
+Raw JSON only, no markdown.`,
+        messages:[{role:'user',content:`Network:\n${peopleSummary}\n\nWho are the best 5 matches for ${co} — ${goal}?`}]
+      })
+    });
+    const data=await res.json();
+    const text=data.content?.map(i=>i.text||'').join('')||'';
+    const matches=JSON.parse(text.replace(/```json|```/g,'').trim());
+    out.innerHTML=`
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--accent);margin-bottom:14px;">
+        🎯 Top Matches — ${co} · ${goal}
+      </div>
+      ${matches.map(m=>`
+        <div style="background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:10px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <span style="font-size:15px;font-weight:700;">${m.name}</span>
+            <span style="padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;
+              background:${m.score==='Strong'?'rgba(0,229,176,0.1)':m.score==='High'?'rgba(124,111,255,0.1)':'rgba(255,209,102,0.1)'};
+              color:${m.score==='Strong'?'#00e5b0':m.score==='High'?'var(--accent)':'var(--yellow)'};
+              border:1px solid ${m.score==='Strong'?'rgba(0,229,176,0.3)':m.score==='High'?'rgba(124,111,255,0.3)':'rgba(255,209,102,0.3)'};">
+              ${m.score}
+            </span>
+          </div>
+          <div style="font-size:13px;color:var(--muted);margin-bottom:8px;">${m.reason}</div>
+          <div style="font-size:12px;color:var(--accent);">→ ${m.action}</div>
+        </div>`).join('')}`;
+  }catch(e){
+    out.innerHTML=`<div style="color:var(--red);padding:20px;text-align:center;">שגיאה — נסה שוב</div>`;
+    console.error(e);
+  }
 }
 
 function runLeads(){
