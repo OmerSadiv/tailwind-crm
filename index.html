@@ -1124,20 +1124,23 @@ async function runLinkedInMatch(){
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
-        system:`You are a BD advisor for Tailwind (Omer Sadiv, Israeli BD firm, ex-Pernod Ricard).
-Company: ${co} — ${coData?.desc||coData?.category||''}
-Goal: ${goal}
-Already in CRM: ${existing}
-From the LinkedIn connections below, find the TOP 10 most relevant people.
-Return ONLY JSON array:
-[{"name":"...","title":"...","company":"...","why":"2 sentences","action":"specific intro approach"}]
-Raw JSON only.`,
-        messages:[{role:'user',content:`LinkedIn connections:\n${sample}`}]
+        model:'claude-haiku-4-5-20251001',
+        max_tokens:1500,
+        system:'Return ONLY a valid JSON array, no other text. Format: [{"name":"...","title":"...","company":"...","why":"1 sentence why they fit","action":"specific first step"}]',
+        messages:[{role:'user',content:'BD advisor for Tailwind. Company: '+co+'. Goal: '+goal+'. Find TOP 10 most relevant people. Return ONLY JSON array.\\n\\n'+sample}]
       })
     });
     const data=await res.json();
     const text=data.content?.map(i=>i.text||'').join('')||'';
-    const matches=JSON.parse(text.replace(/```json|```/g,'').trim());
+    let matches=[];
+    try{
+      const clean=text.replace(/```json|```/g,'').trim();
+      const s=clean.indexOf('['),e=clean.lastIndexOf(']');
+      if(s!==-1&&e!==-1)matches=JSON.parse(clean.slice(s,e+1));
+    }catch(err){
+      results.innerHTML='<div style="color:var(--red);padding:20px;">שגיאת עיבוד — נסה שוב</div>';
+      return;
+    }
 
     results.innerHTML=`
       <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--accent);margin-bottom:14px;">
