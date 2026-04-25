@@ -1210,25 +1210,30 @@ async function runLinkedInMatch(){
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({model:"claude-haiku-4-5-20251001",max_tokens:1000,
-        system:`You are a BD advisor for Tailwind (Omer Sadiv, Israeli BD firm, ex-Pernod Ricard).
-Company: ${co} — ${coData?.desc||coData?.category||''}
-Goal: ${goal}
-Already in CRM: ${existing}
-From the LinkedIn connections below, find the TOP 10 most relevant people.
-Return ONLY JSON array:
-[{"name":"...","title":"...","company":"...","why":"2 sentences","action":"specific intro approach"}]
-Raw JSON only.`,
-        messages:[{role:'user',content:`LinkedIn connections:\n${sample}`}]
+        system:`Return ONLY a valid JSON array, no other text. Format: [{"name":"...","title":"...","company":"...","why":"1 sentence","action":"next step"}]`,
+        messages:[{role:'user',content:`BD advisor for Tailwind. Company: ${co}. Goal: ${goal}. Find TOP 8 most relevant people from this list. Return ONLY JSON array.\n\n${sample}`}]
       })
     });
     const data=await res.json();
     const text=data.content?.map(i=>i.text||'').join('')||'';
-    const clean=text.replace(/```json|```/g,'').trim();
-    // Extract JSON array safely
-    const start=clean.indexOf('[');
-    const end=clean.lastIndexOf(']');
-    if(start===-1||end===-1)throw new Error('No JSON array found');
-    const matches=JSON.parse(clean.slice(start,end+1));
+    // Parse robustly - handle any extra text around JSON
+    let matches=[];
+    try{
+      const clean=text.replace(/```json|```/g,'').trim();
+      const start=clean.indexOf('[');
+      const end=clean.lastIndexOf(']');
+      if(start!==-1&&end!==-1){
+        // Clean each item to remove problematic chars
+        const jsonStr=clean.slice(start,end+1)
+          .replace(/[\x00-\x1F\x7F]/g,' ')
+          .replace(/,\s*}/g,'}')
+          .replace(/,\s*]/g,']');
+        matches=JSON.parse(jsonStr);
+      }
+    }catch(e){
+      results.innerHTML=`<div style="color:var(--red);padding:20px;">שגיאת עיבוד — נסה שוב או בחר חברה אחרת</div>`;
+      return;
+    }
 
     results.innerHTML=`
       <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--accent);margin-bottom:14px;">
