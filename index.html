@@ -1121,15 +1121,23 @@ async function runLinkedInMatch(){
   results.innerHTML=`<div style="text-align:center;padding:40px;color:var(--muted);"><div class="spinner" style="margin:0 auto 12px;"></div>מנתח ${liConnections.length} קשרים…</div>`;
 
   // Prepare connections summary (limit to 200)
-  // Filter by territory if selected
-  const pool=territory?liConnections.filter(function(r){
-    const loc=(r['Location']||r['location']||r['Country']||r['country']||'').toLowerCase();
-    const t=territory.toLowerCase();
-    if(t==='europe'){return ['uk','germany','france','spain','italy','netherlands','sweden','norway','denmark','finland','switzerland','austria','belgium','portugal','poland'].some(function(c){return loc.includes(c);});}
-    if(t==='latam'){return ['brazil','mexico','colombia','argentina','chile','peru','venezuela','ecuador','bolivia','uruguay','paraguay','costa rica','panama','guatemala'].some(function(c){return loc.includes(c);});}
-    if(t==='middle east'){return ['uae','dubai','israel','saudi','qatar','bahrain','kuwait','oman','jordan','egypt','lebanon'].some(function(c){return loc.includes(c);});}
-    return loc.includes(t.toLowerCase());
-  }):liConnections;
+  // Filter by territory if selected — fallback to all if too few results
+  var filtered=liConnections;
+  if(territory){
+    var byTerritory=liConnections.filter(function(r){
+      const loc=(r['Location']||r['location']||r['Country']||r['country']||'').toLowerCase();
+      const t=territory.toLowerCase();
+      if(t==='europe'){return ['uk','germany','france','spain','italy','netherlands','sweden','norway','denmark','finland','switzerland','austria','belgium','portugal','poland'].some(function(c){return loc.includes(c);});}
+      if(t==='latam'){return ['brazil','mexico','colombia','argentina','chile','peru','venezuela','ecuador','bolivia','uruguay','paraguay','costa rica','panama','guatemala'].some(function(c){return loc.includes(c);});}
+      if(t==='middle east'){return ['uae','dubai','israel','saudi','qatar','bahrain','kuwait','oman','jordan','egypt','lebanon'].some(function(c){return loc.includes(c);});}
+      return loc.includes(t.toLowerCase());
+    });
+    filtered=byTerritory.length>=30?byTerritory:liConnections;
+    if(byTerritory.length<30){
+      results.innerHTML+='<div style="font-size:11px;color:var(--yellow);margin-bottom:8px;">⚠️ פחות מ-30 קשרים עם Location מוגדר ל-'+territory+' — מציג כל הקשרים</div>';
+    }
+  }
+  const pool=filtered;
 
   const sample=pool.slice(0,200).map(r=>{
     const name=`${r['First Name']||r['first name']||''} ${r['Last Name']||r['last name']||''}`.trim();
