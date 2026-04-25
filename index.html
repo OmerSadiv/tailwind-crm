@@ -1190,9 +1190,8 @@ function renderLinkedInResults(matches, co, results){
   matches.forEach(function(m){
     var score=m.finalScore||m.score||0;
     var sc=score>=8?'#00e5b0':score>=6?'#7c6fff':'#ffd166';
-    var firstName=(m.name||'').split(' ')[0];
-    var lastName=(m.name||'').split(' ').slice(1).join(' ');
-    var liLink='https://www.linkedin.com/search/results/people/?firstName='+encodeURIComponent(firstName)+'&lastName='+encodeURIComponent(lastName)+'&company='+encodeURIComponent(m.company||'');
+    var liQuery=encodeURIComponent((m.name||'')+' '+(m.company||''));
+    var liLink='https://www.linkedin.com/search/results/all/?keywords='+liQuery;
     var webRow=m.webInsight?('<div style="font-size:11px;color:#7c6fff;margin-bottom:6px;padding:6px 8px;background:#7c6fff11;border-radius:6px;border-left:2px solid #7c6fff;">🌐 '+m.webInsight+'</div>'):'';
     html+='<div style="background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:10px;">';
     html+='<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">';
