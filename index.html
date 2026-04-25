@@ -1162,6 +1162,49 @@ function keywordFilter(rows){
   });
 }
 
+// ── GOAL-BASED FILTERS ──────────────────────────────────────
+const GOAL_FILTERS={
+  'Investor':       ['partner','managing director','general partner','fund','venture','vc','angel','investment','capital','portfolio'],
+  'Channel Partner':['vp sales','head of sales','bd','business development','partnerships','channel','distributor','reseller','alliance','sales director'],
+  'Enterprise Client':['cmo','vp marketing','head of marketing','chief marketing','vp digital','head of digital','director of marketing','marketing director','vp ecommerce'],
+  'Strategic Partner':['ceo','founder','co-founder','president','managing director','general manager','chief'],
+  'Reseller':       ['sales','account executive','regional manager','territory','business development','channel'],
+};
+
+const CO_FILTERS={
+  'Limy AI':      ['marketing','brand','digital','ecommerce','cmo','growth','seo','media','retail','pharma','fmcg','consumer','advertising'],
+  'Blings':       ['marketing','video','media','brand','digital','cmo','content','advertising','retail','telecom'],
+  'Cytrix':       ['cyber','security','ciso','cso','infosec','risk','compliance','soc','pentest'],
+  'VISITT':       ['real estate','property','proptech','building','facility','asset','realty','construction','landlord'],
+  'Sency AI':     ['fitness','health','sport','wellness','physical','training','gym','insurance','rehab'],
+  'Shavit Group': ['intelligence','osint','government','defense','security','law enforcement','military'],
+  'Jessica Energy':['agriculture','energy','solar','agri','farming','cleantech','sustainability','kibbutz'],
+  'Enabley':      ['hr','learning','training','l&d','workforce','operations','retail','logistics','deskless'],
+  'RePower':      ['biogas','energy','waste','environmental','industrial','cleantech','sustainability','biogas'],
+};
+
+function smartFilterConnections(rows, co, goal){
+  const coKw=CO_FILTERS[co]||[];
+  const goalKw=GOAL_FILTERS[goal]||[];
+  // Score each connection
+  return rows.map(r=>{
+    const title=((r['Position']||r['position']||r['Title']||r['title']||'')).toLowerCase();
+    const comp=((r['Company']||r['company']||'')).toLowerCase();
+    let score=0;
+    coKw.forEach(k=>{if(title.includes(k)||comp.includes(k))score+=2;});
+    goalKw.forEach(k=>{if(title.includes(k))score+=3;});
+    // Seniority bonus
+    ['ceo','cto','cmo','ciso','founder','president','vp','svp','evp','director','head of','partner','managing'].forEach(k=>{
+      if(title.includes(k))score+=2;
+    });
+    return{...r,_score:score};
+  }).filter(r=>r._score>0).sort((a,b)=>b._score-a._score);
+}
+
+let liResultsCache=[];
+let liCurrentBatch=0;
+const LI_BATCH_SIZE=10;
+
 async function runLinkedInMatch(){
   const results=document.getElementById('li-results');
   const co=document.getElementById('li-co').value;
@@ -1172,88 +1215,174 @@ async function runLinkedInMatch(){
     return;
   }
 
-  results.innerHTML=`<div style="text-align:center;padding:40px;color:var(--muted);"><div class="spinner" style="margin:0 auto 12px;"></div>מנתח ${liConnections.length} קשרים…</div>`;
+  liCurrentBatch=0;
+  liResultsCache=[];
 
-  // Prepare connections summary (limit to 200)
-  // Smart filter by company category
-  const coKeywords={
-    'Limy AI':['marketing','brand','digital','ecommerce','e-commerce','cmo','growth','seo','media','retail','pharma','fmcg','consumer'],
-    'Blings':['marketing','video','media','brand','digital','cmo','content','advertising','retail','telecom'],
-    'Cytrix':['cyber','security','ciso','cso','infosec','risk','compliance','it','technology'],
-    'VISITT':['real estate','property','proptech','building','facility','asset','realty','construction'],
-    'Sency AI':['fitness','health','sport','wellness','physical','training','gym','insurance'],
-    'Shavit Group':['intelligence','osint','government','defense','security','law enforcement'],
-    'Jessica Energy':['agriculture','energy','solar','agri','farming','cleantech','sustainability'],
-    'Enabley':['hr','learning','training','l&d','workforce','operations','retail','logistics'],
-    'RePower':['biogas','energy','waste','environmental','industrial','cleantech','sustainability']
-  };
-  const coKw=coKeywords[co]||[];
-  const smartFilter=liConnections.filter(r=>{
-    const title=((r.Position||r.position||r.Title||r.title||'')).toLowerCase();
-    const comp=((r.Company||r.company||'')).toLowerCase();
-    if(coKw.length===0)return keywordFilter([r]).length>0;
-    return coKw.some(k=>title.includes(k)||comp.includes(k));
-  });
-  const pool=smartFilter.length>50?smartFilter:keywordFilter(liConnections);
-  const sample=pool.slice(0,150).map(r=>{
+  results.innerHTML=`<div style="text-align:center;padding:40px;color:var(--muted);"><div class="spinner" style="margin:0 auto 12px;"></div><div>שלב 1: סינון חכם מתוך ${liConnections.length} קשרים…</div></div>`;
+
+  const scored=smartFilterConnections(liConnections,co,goal);
+  const top=scored.slice(0,200);
+
+  results.innerHTML=`<div style="text-align:center;padding:40px;color:var(--muted);"><div class="spinner" style="margin:0 auto 12px;"></div><div>שלב 2: AI מנתח ${top.length} קשרים רלוונטיים…</div></div>`;
+
+  const sample=top.slice(0,180).map((r,i)=>{
     const name=`${r['First Name']||r['first name']||''} ${r['Last Name']||r['last name']||''}`.trim().replace(/[^\w\s\-]/g,' ');
-    const title=(r['Position']||r['position']||r['Title']||r['title']||'').replace(/[^\w\s\-,]/g,' ').slice(0,60);
-    const company=(r['Company']||r['company']||'').replace(/[^\w\s\-,]/g,' ').slice(0,40);
-    return`${name} | ${title} | ${company}`;
+    const title=(r['Position']||r['position']||r['Title']||r['title']||'').replace(/[^\w\s\-,&]/g,' ').slice(0,60);
+    const company=(r['Company']||r['company']||'').replace(/[^\w\s\-,&]/g,' ').slice(0,40);
+    return`${i+1}. ${name} | ${title} | ${company}`;
   }).join('\n');
 
   const coData=COMPANIES.find(c=>c.name===co);
-  const existing=PEOPLE.map(p=>p.name).join(', ');
 
   try{
     const res=await fetch(WORKER_URL,{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:"claude-haiku-4-5-20251001",max_tokens:1000,
-        system:`Return ONLY a valid JSON array, no other text. Format: [{"name":"...","title":"...","company":"...","why":"1 sentence","action":"next step"}]`,
-        messages:[{role:'user',content:`BD advisor for Tailwind. Company: ${co}. Goal: ${goal}. Find TOP 8 most relevant people from this list. Return ONLY JSON array.\n\n${sample}`}]
+      body:JSON.stringify({
+        model:'claude-haiku-4-5-20251001',
+        max_tokens:2000,
+        system:`You are a senior BD analyst for Tailwind, an Israeli BD firm (founder: Omer Sadiv, ex-Pernod Ricard).
+Portfolio company: ${co} — ${coData?.desc||coData?.category||''}
+Looking for: ${goal}
+
+Return ONLY a valid JSON array. Each item: {"name":"...","title":"...","company":"...","fit":"Client/Partner/Investor","score":1-10,"why":"1 sharp sentence about fit","action":"specific first message approach","companyType":"what their company does in 5 words"}
+No markdown, no explanation, just the JSON array.`,
+        messages:[{role:'user',content:`From this scored list, pick the TOP 20 best fits for ${co} as ${goal}. Return ONLY JSON array.\n\n${sample}`}]
       })
     });
     const data=await res.json();
     const text=data.content?.map(i=>i.text||'').join('')||'';
-    // Parse robustly - handle any extra text around JSON
     let matches=[];
     try{
-      const clean=text.replace(/```json|```/g,'').trim();
+      const clean=text.replace(/\`\`\`json|\`\`\`/g,'').trim();
       const start=clean.indexOf('[');
       const end=clean.lastIndexOf(']');
       if(start!==-1&&end!==-1){
-        // Clean each item to remove problematic chars
-        const jsonStr=clean.slice(start,end+1)
-          .replace(/[\x00-\x1F\x7F]/g,' ')
-          .replace(/,\s*}/g,'}')
-          .replace(/,\s*]/g,']');
+        const jsonStr=clean.slice(start,end+1).replace(/[ -]/g,' ');
         matches=JSON.parse(jsonStr);
       }
     }catch(e){
-      results.innerHTML=`<div style="color:var(--red);padding:20px;">שגיאת עיבוד — נסה שוב או בחר חברה אחרת</div>`;
+      results.innerHTML=`<div style="color:var(--red);padding:20px;">שגיאת עיבוד — נסה שוב</div>`;
       return;
     }
 
-    results.innerHTML=`
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--accent);margin-bottom:14px;">
-        🎯 Top ${matches.length} Matches מ-LinkedIn — ${co}
-      </div>
-      ${matches.map(m=>`
-        <div style="background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:10px;">
-          <div style="margin-bottom:6px;">
-            <span style="font-size:14px;font-weight:700;">${m.name}</span>
-            <span style="font-size:11px;color:var(--accent);margin-left:8px;">${m.title} @ ${m.company}</span>
-          </div>
-          <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">${m.why}</div>
-          <div style="display:flex;justify-content:space-between;align-items:center;">
-            <div style="font-size:12px;color:var(--yellow);">→ ${m.action}</div>
-            <button class="btn btn-green btn-xs" onclick="addLinkedInMatchTocrm(${JSON.stringify(m).replace(/"/g,'&quot;')})">+ הוסף ל-CRM</button>
-          </div>
-        </div>`).join('')}`;
+    liResultsCache=matches;
+    liCurrentBatch=0;
+    renderLinkedInBatch(co,goal,false);
+
   }catch(e){
     results.innerHTML=`<div style="color:var(--red);padding:20px;text-align:center;">שגיאה — נסה שוב</div>`;
     console.error(e);
+  }
+}
+
+function renderLinkedInBatch(co,goal,append){
+  const results=document.getElementById('li-results');
+  const start=liCurrentBatch*LI_BATCH_SIZE;
+  const batch=liResultsCache.slice(start,start+LI_BATCH_SIZE);
+  const hasMore=liResultsCache.length>start+LI_BATCH_SIZE;
+
+  const cards=batch.map((m,i)=>{
+    const scoreColor=m.score>=8?'#00e5b0':m.score>=6?'#7c6fff':'#ffd166';
+    const mStr=JSON.stringify(m).replace(/"/g,'&quot;');
+    return`<div style="background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+        <div>
+          <span style="font-size:14px;font-weight:700;">${m.name}</span>
+          <span style="font-size:11px;color:var(--accent);margin-left:8px;">${m.title||''} @ ${m.company||''}</span>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <span style="background:${scoreColor}22;color:${scoreColor};border:1px solid ${scoreColor}44;border-radius:8px;padding:2px 8px;font-size:11px;font-weight:700;">${m.score}/10</span>
+          <span style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:2px 8px;font-size:10px;color:var(--muted);">${m.fit||goal}</span>
+        </div>
+      </div>
+      ${m.companyType?`<div style="font-size:11px;color:var(--muted);margin-bottom:6px;">🏢 ${m.companyType}</div>`:''}
+      <div style="font-size:12px;color:var(--text);margin-bottom:8px;">${m.why||''}</div>
+      <div style="font-size:12px;color:var(--yellow);margin-bottom:10px;">→ ${m.action||''}</div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-xs" style="background:var(--accent);color:white;border:none;" onclick="generateIntroMsg(${mStr},'${co}','${goal}')">✉ Generate Intro</button>
+        <button class="btn btn-green btn-xs" onclick="addLinkedInMatchTocrm(${mStr})">+ CRM</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  if(append){
+    const existing=results.innerHTML;
+    const btnIdx=existing.lastIndexOf('<button');
+    results.innerHTML=existing.slice(0,btnIdx)+cards+(hasMore?`<button onclick="loadMoreLinkedIn('${co}','${goal}')" style="width:100%;padding:10px;background:var(--surf);border:1px solid var(--border);border-radius:10px;color:var(--accent);cursor:pointer;font-size:13px;">טען עוד ${Math.min(LI_BATCH_SIZE,liResultsCache.length-start-LI_BATCH_SIZE)} תוצאות ↓</button>`:'');
+  }else{
+    results.innerHTML=`
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--accent);">🎯 ${liResultsCache.length} Matches — ${co} · ${goal}</div>
+        <div style="font-size:11px;color:var(--muted);">מציג ${Math.min(LI_BATCH_SIZE,liResultsCache.length)} מתוך ${liResultsCache.length}</div>
+      </div>
+      ${cards}
+      ${hasMore?`<button onclick="loadMoreLinkedIn('${co}','${goal}')" style="width:100%;padding:10px;background:var(--surf);border:1px solid var(--border);border-radius:10px;color:var(--accent);cursor:pointer;font-size:13px;margin-top:4px;">טען עוד ${Math.min(LI_BATCH_SIZE,liResultsCache.length-LI_BATCH_SIZE)} תוצאות ↓</button>`:''}`;
+  }
+}
+
+function loadMoreLinkedIn(co,goal){
+  liCurrentBatch++;
+  renderLinkedInBatch(co,goal,true);
+}
+
+async function generateIntroMsg(m,co,goal){
+  // Show channel selector
+  const overlay=document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;';
+  overlay.innerHTML=`
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:28px;width:420px;max-width:95vw;">
+      <div style="font-size:16px;font-weight:700;margin-bottom:6px;">✉ Generate Intro Message</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:20px;">${m.name} — ${m.title} @ ${m.company}</div>
+      <div style="display:flex;gap:10px;margin-bottom:20px;">
+        <button onclick="doGenerateIntro(${JSON.stringify(m).replace(/"/g,'&quot;')},'${co}','${goal}','linkedin',this.closest('div[style*=fixed]'))"
+          style="flex:1;padding:12px;background:var(--surf);border:1px solid var(--border);border-radius:10px;color:var(--text);cursor:pointer;font-size:13px;">
+          💼 LinkedIn DM
+        </button>
+        <button onclick="doGenerateIntro(${JSON.stringify(m).replace(/"/g,'&quot;')},'${co}','${goal}','email',this.closest('div[style*=fixed]'))"
+          style="flex:1;padding:12px;background:var(--surf);border:1px solid var(--border);border-radius:10px;color:var(--text);cursor:pointer;font-size:13px;">
+          📧 Email
+        </button>
+        <button onclick="doGenerateIntro(${JSON.stringify(m).replace(/"/g,'&quot;')},'${co}','${goal}','whatsapp',this.closest('div[style*=fixed]'))"
+          style="flex:1;padding:12px;background:var(--surf);border:1px solid var(--border);border-radius:10px;color:var(--text);cursor:pointer;font-size:13px;">
+          💬 WhatsApp
+        </button>
+      </div>
+      <button onclick="this.closest('div[style*=fixed]').remove()" style="width:100%;padding:8px;background:none;border:1px solid var(--border);border-radius:8px;color:var(--muted);cursor:pointer;">ביטול</button>
+    </div>`;
+  document.body.appendChild(overlay);
+}
+
+async function doGenerateIntro(m,co,goal,channel,overlayEl){
+  overlayEl.innerHTML=`<div style="background:var(--card);border-radius:16px;padding:40px;text-align:center;color:var(--muted);"><div class="spinner" style="margin:0 auto 16px;"></div>מנסח הודעה…</div>`;
+  const coData=COMPANIES.find(c=>c.name===co);
+  const channelGuide={'linkedin':'LinkedIn DM — max 300 chars, warm, no pitch','email':'Professional email — subject line + 3 short paragraphs','whatsapp':'WhatsApp — casual, short, friendly, max 150 chars'};
+  try{
+    const res=await fetch(WORKER_URL,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-haiku-4-5-20251001',
+        max_tokens:600,
+        system:`You are Omer Sadiv, founder of Tailwind (Israeli BD firm, ex-Pernod Ricard). Write a personalized outreach message. Be specific, warm, no generic phrases. Reference their role and company. Channel: ${channelGuide[channel]}`,
+        messages:[{role:'user',content:`Write a ${channel} message to ${m.name}, ${m.title} at ${m.company}. Purpose: introduce ${co} (${coData?.desc||''}) and explore ${goal} opportunity. Their company does: ${m.companyType||''}. Reason they fit: ${m.why||''}.`}]
+      })
+    });
+    const data=await res.json();
+    const msg=data.content?.map(i=>i.text||'').join('')||'';
+    overlayEl.innerHTML=`
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px;width:500px;max-width:95vw;">
+        <div style="font-size:14px;font-weight:700;margin-bottom:16px;">✉ ${channel==='linkedin'?'LinkedIn DM':channel==='email'?'Email':'WhatsApp'} — ${m.name}</div>
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:16px;font-size:13px;line-height:1.6;white-space:pre-wrap;margin-bottom:16px;">${msg}</div>
+        <div style="display:flex;gap:10px;">
+          <button onclick="navigator.clipboard.writeText(this.closest('div').previousElementSibling.textContent);notif('הועתק ✓')" 
+            style="flex:1;padding:10px;background:var(--accent);border:none;border-radius:8px;color:white;cursor:pointer;font-size:13px;">📋 העתק</button>
+          <button onclick="this.closest('div[style*=fixed]').remove()" 
+            style="flex:1;padding:10px;background:var(--surf);border:1px solid var(--border);border-radius:8px;color:var(--text);cursor:pointer;font-size:13px;">סגור</button>
+        </div>
+      </div>`;
+  }catch(e){
+    overlayEl.innerHTML=`<div style="background:var(--card);border-radius:16px;padding:24px;color:var(--red);">שגיאה — נסה שוב</div>`;
   }
 }
 
