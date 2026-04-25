@@ -1300,7 +1300,7 @@ No markdown, no explanation, just the JSON array.`,
       const start=clean.indexOf('[');
       const end=clean.lastIndexOf(']');
       if(start!==-1&&end!==-1){
-        const jsonStr=clean.slice(start,end+1).replace(/[-]/g,' ');
+        const jsonStr=clean.slice(start,end+1).replace(/[-]/g,' ');
         matches=JSON.parse(jsonStr);
       }
     }catch(e){
@@ -3630,8 +3630,7 @@ async function runCRMLeads(){
   const coData=COMPANIES.find(c=>c.name===co);
   const peopleSummary=PEOPLE.filter(p=>p.id!==0).map(p=>
     `${p.name} | ${p.type} | ${p.role} | ${p.company} | ${p.geo} | companies: ${(p.companies||[]).join(',')} | strength: ${p.strength||0}`
-  ).join('
-');
+  ).join('\n');
   try{
     const res=await fetch(WORKER_URL,{
       method:'POST',
@@ -3640,16 +3639,14 @@ async function runCRMLeads(){
         model:'claude-haiku-4-5-20251001',
         max_tokens:1500,
         system:`Return ONLY a valid JSON array. Each item: {"name":"...","role":"...","company":"...","score":1-10,"why":"1 sentence why they fit","action":"specific next step"}`,
-        messages:[{role:'user',content:`Find best matches in this CRM network for ${co} (${coData?.desc||''}) looking for ${type}. Return TOP 8 as JSON array.
-
-${peopleSummary}`}]
+        messages:[{role:'user',content:`Find best matches in this CRM network for ${co} (${coData?.desc||''}) looking for ${type}. Return TOP 8 as JSON array.\n\n${peopleSummary}`}]
       })
     });
     const data=await res.json();
     const text=data.content?.map(i=>i.text||'').join('')||'';
     let matches=[];
     const start=text.indexOf('[');const end=text.lastIndexOf(']');
-    if(start!==-1&&end!==-1)matches=JSON.parse(text.slice(start,end+1).replace(/[ -]/g,' '));
+    if(start!==-1&&end!==-1)matches=JSON.parse(text.slice(start,end+1).replace(/[\u0000-\u001f\u007f]/g,' '));
     out.innerHTML=`
       <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--accent);margin-bottom:14px;">
         🎯 ${matches.length} התאמות מהרשת — ${co}
@@ -3777,6 +3774,7 @@ async function sendFloatChat(){
     const loadEl=document.getElementById(loadId);
     if(loadEl){loadEl.textContent='Error — please try again';loadEl.style.color='var(--red)';}
   }
+  }
 }
 
 // Keep sendChat for backward compat (now delegates to float)
@@ -3786,52 +3784,25 @@ function buildContext(){
   const companySummary=COMPANIES.map(co=>{
     const people=PEOPLE.filter(p=>p.companies&&p.companies.includes(co.name));
     const clients=CLIENTS.filter(c=>c.portfolioCo===co.name);
-    const clientNames=clients.map(c=>`${c.name} (${c.stage})`).join(', ');
-    return`${co.name} (${co.category}, ${co.commissionPct}% comm): partners=[${people.map(p=>p.name).join(', ')}], clients=[${clientNames||'none'}]`;
+    const clientNames=clients.map(c=>c.name+'('+c.stage+')').join(', ');
+    return co.name+' ('+co.category+', '+co.commissionPct+'% comm): partners=['+people.map(p=>p.name).join(', ')+'], clients=['+clientNames+']';
   }).join('\n');
-  const peopleSummary=PEOPLE.map(p=>`id:${p.id} | ${p.name} | ${tl(p.type)} | ${p.role} | ${p.company} | ${p.geo} | status:${sl(p.status)} | companies:${(p.companies||[]).join(',')}`).join('\n');
+  const peopleSummary=PEOPLE.map(p=>'id:'+p.id+' | '+p.name+' | '+tl(p.type)+' | '+p.role+' | '+p.company+' | '+p.geo+' | status:'+sl(p.status)+' | companies:'+((p.companies||[]).join(','))).join('\n');
   const companyNames=COMPANIES.map(c=>c.name).join(', ');
-  return`You are an AI assistant for Tailwind CRM (Omer Sadiv, Israeli BD firm).
-
-PORTFOLIO COMPANIES: ${companyNames}
-
-COMPANIES DETAIL:\n${companySummary}
-
-PEOPLE IN CRM:\n${peopleSummary}
-
-INSTRUCTIONS:
-- If the user asks a question → answer it concisely in their language (Hebrew or English)
-- If the user wants to ADD something (person, client, lead) → respond ONLY with a JSON action object like this:
-{
-  "action": "add_person",
-  "name": "Full Name",
-  "type": "partner|sub|referrer|contact|client",
-  "role": "their title",
-  "company": "their company",
-  "geo": "country/region",
-  "companies": ["Portfolio Company Name"],
-  "status": "initial|followup|signed|prospects|hold",
-  "notes": "context"
+  const instructions=[
+    'You are an AI assistant for Tailwind CRM (Omer Sadiv, Israeli BD firm).',
+    'PORTFOLIO COMPANIES: '+companyNames,
+    'COMPANIES DETAIL: '+companySummary,
+    'PEOPLE IN CRM: '+peopleSummary,
+    'INSTRUCTIONS:',
+    '- Answer questions concisely in Hebrew or English based on user language',
+    '- To ADD a person respond ONLY with JSON: action=add_person, fields: name,type,role,company,geo,companies,status,notes',
+    '- To UPDATE status respond ONLY with JSON: action=update_status, fields: personId,personName,newStatus',
+    '- To ADD CLIENT respond ONLY with JSON: action=add_client, fields: personId,personName,company,clientName,clientType',
+    'For actions return ONLY valid JSON. For questions return only text.'
+  ].join('\n');
+  return instructions;
 }
-- If the user wants to UPDATE a status → respond ONLY with:
-{
-  "action": "update_status",
-  "personId": <id number>,
-  "personName": "name",
-  "newStatus": "initial|followup|signed|prospects|hold"
-}
-- If the user wants to ADD A CLIENT to a partner/company → respond ONLY with:
-{
-  "action": "add_client",
-  "personId": <id>,
-  "personName": "name",
-  "company": "Portfolio Company",
-  "clientName": "client name",
-  "clientType": "potential|signed"
-}
-IMPORTANT: For actions, return ONLY the JSON with no other text. For questions, return only text with no JSON.`;
-}
-
 
 function buildActionCard(action){
   const wrap=document.createElement('div');
