@@ -531,7 +531,18 @@ hr{border:none;border-top:1px solid var(--border);margin:16px 0;}
           <option>Enabley</option><option>RePower</option>
         </select>
       </div>
-      <div style="flex:1;min-width:200px;">
+      <div style="flex:1;min-width:160px;">
+        <label style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);display:block;margin-bottom:8px;">Territory</label>
+        <select id="li-territory" style="margin:0;width:100%;">
+          <option value="">🌐 כל העולם</option>
+          <option value="Israel">🇮🇱 ישראל</option>
+          <option value="United States">🇺🇸 USA</option>
+          <option value="Europe">🇪🇺 אירופה</option>
+          <option value="LATAM">🌎 לאטאם</option>
+          <option value="Middle East">🌍 Middle East</option>
+        </select>
+      </div>
+      <div style="flex:1;min-width:160px;">
         <label style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);display:block;margin-bottom:8px;">Looking for</label>
         <select id="li-goal" style="margin:0;width:100%;">
           <option value="partner">Channel Partner</option>
@@ -1100,6 +1111,7 @@ async function runLinkedInMatch(){
   const results=document.getElementById('li-results');
   const co=document.getElementById('li-co').value;
   const goal=document.getElementById('li-goal').value;
+  const territory=document.getElementById('li-territory')&&document.getElementById('li-territory').value||'';
 
   if(!liConnections||!liConnections.length){
     results.innerHTML=`<div style="color:var(--red);padding:20px;text-align:center;">העלה קובץ LinkedIn CSV תחילה</div>`;
@@ -1109,7 +1121,17 @@ async function runLinkedInMatch(){
   results.innerHTML=`<div style="text-align:center;padding:40px;color:var(--muted);"><div class="spinner" style="margin:0 auto 12px;"></div>מנתח ${liConnections.length} קשרים…</div>`;
 
   // Prepare connections summary (limit to 200)
-  const sample=liConnections.slice(0,200).map(r=>{
+  // Filter by territory if selected
+  const pool=territory?liConnections.filter(function(r){
+    const loc=(r['Location']||r['location']||r['Country']||r['country']||'').toLowerCase();
+    const t=territory.toLowerCase();
+    if(t==='europe'){return ['uk','germany','france','spain','italy','netherlands','sweden','norway','denmark','finland','switzerland','austria','belgium','portugal','poland'].some(function(c){return loc.includes(c);});}
+    if(t==='latam'){return ['brazil','mexico','colombia','argentina','chile','peru','venezuela','ecuador','bolivia','uruguay','paraguay','costa rica','panama','guatemala'].some(function(c){return loc.includes(c);});}
+    if(t==='middle east'){return ['uae','dubai','israel','saudi','qatar','bahrain','kuwait','oman','jordan','egypt','lebanon'].some(function(c){return loc.includes(c);});}
+    return loc.includes(t.toLowerCase());
+  }):liConnections;
+
+  const sample=pool.slice(0,200).map(r=>{
     const name=`${r['First Name']||r['first name']||''} ${r['Last Name']||r['last name']||''}`.trim();
     const title=r['Position']||r['position']||r['Title']||r['title']||'';
     const company=r['Company']||r['company']||'';
@@ -1127,7 +1149,7 @@ async function runLinkedInMatch(){
         model:'claude-haiku-4-5-20251001',
         max_tokens:1500,
         system:'Return ONLY a JSON array. No other text. Each item has: name, title, company, why, action.',
-        messages:[{role:'user',content:'Tailwind BD. Company: '+co+'. Goal: '+goal+'. Top 10 matches. JSON array only.\n'+sample}]
+        messages:[{role:'user',content:'Tailwind BD. Company: '+co+'. Goal: '+goal+(territory?' Territory: '+territory:'')+'. Top 10 matches. JSON array only.\n'+sample}]
       })
     });
     const data=await res.json();
@@ -1158,20 +1180,29 @@ async function runLinkedInMatch(){
 }
 
 function renderLinkedInResults(matches, co, results){
-  var html='<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--accent);margin-bottom:14px;">🎯 Top '+matches.length+' Matches מ-LinkedIn — '+co+'</div>';
+  var hasWeb=matches.some(function(m){return m.webInsight;});
+  var html='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">';
+  html+='<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--accent);">🎯 Top '+matches.length+' Matches — '+co+'</div>';
+  html+='<div style="font-size:11px;color:var(--muted);"><span style="color:var(--accent)">●</span> LinkedIn&nbsp;&nbsp;';
+  if(hasWeb)html+='<span style="color:#7c6fff">●</span> Web Research';
+  html+='</div></div>';
+
   matches.forEach(function(m){
     var score=m.finalScore||m.score||0;
     var sc=score>=8?'#00e5b0':score>=6?'#7c6fff':'#ffd166';
-    var webInfo=m.webInsight?('<div style="font-size:11px;color:#7c6fff;margin-bottom:6px;border-left:2px solid #7c6fff;padding-left:8px;">🌐 '+m.webInsight+'</div>'):'';
+    var firstName=(m.name||'').split(' ')[0];
+    var lastName=(m.name||'').split(' ').slice(1).join(' ');
+    var liLink='https://www.linkedin.com/search/results/people/?firstName='+encodeURIComponent(firstName)+'&lastName='+encodeURIComponent(lastName)+'&company='+encodeURIComponent(m.company||'');
+    var webRow=m.webInsight?('<div style="font-size:11px;color:#7c6fff;margin-bottom:6px;padding:6px 8px;background:#7c6fff11;border-radius:6px;border-left:2px solid #7c6fff;">🌐 '+m.webInsight+'</div>'):'';
     html+='<div style="background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:10px;">';
     html+='<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">';
-    html+='<div><span style="font-size:14px;font-weight:700;">'+m.name+'</span>';
+    html+='<div><a href="'+liLink+'" target="_blank" style="font-size:14px;font-weight:700;color:var(--text);text-decoration:none;border-bottom:1px solid var(--accent);">'+m.name+'</a>';
     html+='<span style="font-size:11px;color:var(--accent);margin-left:8px;">'+(m.title||'')+' @ '+(m.company||'')+'</span></div>';
     html+='<span style="background:'+sc+'22;color:'+sc+';border:1px solid '+sc+'44;border-radius:8px;padding:2px 8px;font-size:11px;font-weight:700;">'+score+'/10</span>';
     html+='</div>';
-    html+=webInfo;
-    html+='<div style="font-size:12px;color:var(--muted);margin-bottom:8px;">'+(m.why||'')+'</div>';
-    html+='<div style="display:flex;justify-content:space-between;align-items:center;">';
+    html+='<div style="font-size:12px;color:var(--muted);margin-bottom:6px;"><span style="color:var(--accent);font-size:10px;font-weight:600;">LINKEDIN</span> '+(m.why||'')+'</div>';
+    html+=webRow;
+    html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">';
     html+='<div style="font-size:12px;color:var(--yellow);">→ '+(m.action||'')+'</div>';
     var mStr=JSON.stringify(m).replace(/"/g,'&quot;');
     html+='<button class="btn btn-green btn-xs" onclick="addLinkedInMatchTocrm('+mStr+')">+ CRM</button>';
@@ -1179,6 +1210,7 @@ function renderLinkedInResults(matches, co, results){
   });
   results.innerHTML=html;
 }
+
 
 async function enrichWithWebSearch(matches, co, goal){
   const coData=COMPANIES.find(c=>c.name===co);
@@ -1205,7 +1237,7 @@ async function enrichWithWebSearch(matches, co, goal){
     let companyData=[];
     try{
       const s=text.indexOf('['),e=text.lastIndexOf(']');
-      if(s!==-1&&e!==-1)companyData=JSON.parse(text.slice(s,e+1).replace(/[ -]/g,' '));
+      if(s!==-1&&e!==-1)companyData=JSON.parse(text.slice(s,e+1).replace(/[-]/g,' '));
     }catch(err){}
 
     // Merge web insights back into matches
