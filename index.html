@@ -1029,6 +1029,7 @@ function nav(id){
   if(id==='people')renderPeople();
   if(id==='clients')renderClientsPage();
   if(id==='revenue')renderRevenue();
+  if(id==='linkedin')setTimeout(loadSavedLinkedIn,100);
 }
 
 // ============================================================
@@ -1044,15 +1045,31 @@ function previewLinkedIn(){
     const text=e.target.result;
     const rows=parseCSV(text);
     liConnections=rows;
+    try{localStorage.setItem('tailwind_linkedin_csv',text);}catch(e){}
     const status=document.getElementById('li-status');
     const btn=document.getElementById('li-run-btn');
-    status.textContent=`${rows.length} connections loaded`;
     btn.disabled=false;
-    // Quick keyword filter preview
     const filtered=keywordFilter(rows);
     status.textContent=`${rows.length} connections loaded — ${filtered.length} pass keyword filter`;
   };
   reader.readAsText(file);
+}
+
+function loadSavedLinkedIn(){
+  try{
+    const saved=localStorage.getItem('tailwind_linkedin_csv');
+    if(saved){
+      const rows=parseCSV(saved);
+      liConnections=rows;
+      const status=document.getElementById('li-status');
+      const btn=document.getElementById('li-run-btn');
+      if(status&&btn){
+        const filtered=keywordFilter(rows);
+        status.textContent=`${rows.length} connections loaded — ${filtered.length} pass keyword filter (saved)`;
+        btn.disabled=false;
+      }
+    }
+  }catch(e){}
 }
 
 function parseCSV(text){
