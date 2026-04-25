@@ -1029,7 +1029,7 @@ function nav(id){
   if(id==='people')renderPeople();
   if(id==='clients')renderClientsPage();
   if(id==='revenue')renderRevenue();
-  if(id==='linkedin')setTimeout(loadSavedLinkedIn,100);
+  if(id==='linkedin')setTimeout(()=>{if(gdriveEnabled&&gdriveToken)gdriveLinkedInLoad();else loadSavedLinkedIn();},100);
 }
 
 // ============================================================
@@ -1045,7 +1045,11 @@ function previewLinkedIn(){
     const text=e.target.result;
     const rows=parseCSV(text);
     liConnections=rows;
-    try{localStorage.setItem('tailwind_linkedin_csv',text);}catch(e){}
+    try{
+      localStorage.setItem('tailwind_linkedin_csv',text);
+      // Save to Google Drive too
+      if(gdriveEnabled&&gdriveToken) gdriveLinkedInSave(text);
+    }catch(e){}
     const status=document.getElementById('li-status');
     const btn=document.getElementById('li-run-btn');
     btn.disabled=false;
@@ -1053,6 +1057,63 @@ function previewLinkedIn(){
     status.textContent=`${rows.length} connections loaded — ${filtered.length} pass keyword filter`;
   };
   reader.readAsText(file);
+}
+
+async function gdriveLinkedInSave(csvText){
+  if(!gdriveToken)return;
+  try{
+    const fname='tailwind_linkedin.csv';
+    const search=await fetch(`https://www.googleapis.com/drive/v3/files?q=name='${fname}'&spaces=drive&fields=files(id)`,{
+      headers:{Authorization:'Bearer '+gdriveToken}
+    });
+    const res=await search.json();
+    const blob=new Blob([csvText],{type:'text/csv'});
+    if(res.files&&res.files.length>0){
+      await fetch(`https://www.googleapis.com/upload/drive/v3/files/${res.files[0].id}?uploadType=media`,{
+        method:'PATCH',headers:{Authorization:'Bearer '+gdriveToken,'Content-Type':'text/csv'},body:blob
+      });
+    } else {
+      const meta=new Blob([JSON.stringify({name:fname,mimeType:'text/csv'})],{type:'application/json'});
+      const form=new FormData();
+      form.append('metadata',meta);
+      form.append('file',blob);
+      await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',{
+        method:'POST',headers:{Authorization:'Bearer '+gdriveToken},body:form
+      });
+    }
+    notif('✅ LinkedIn CSV נשמר ב-Drive');
+  }catch(e){console.error('LinkedIn Drive save error',e);}
+}
+
+async function gdriveLinkedInLoad(){
+  if(!gdriveToken)return;
+  try{
+    const fname='tailwind_linkedin.csv';
+    const search=await fetch(`https://www.googleapis.com/drive/v3/files?q=name='${fname}'&spaces=drive&fields=files(id,modifiedTime)`,{
+      headers:{Authorization:'Bearer '+gdriveToken}
+    });
+    const res=await search.json();
+    if(res.files&&res.files.length>0){
+      const fileId=res.files[0].id;
+      const modifiedTime=res.files[0].modifiedTime;
+      const dl=await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,{
+        headers:{Authorization:'Bearer '+gdriveToken}
+      });
+      const text=await dl.text();
+      localStorage.setItem('tailwind_linkedin_csv',text);
+      localStorage.setItem('tailwind_linkedin_date',modifiedTime);
+      const rows=parseCSV(text);
+      liConnections=rows;
+      const status=document.getElementById('li-status');
+      const btn=document.getElementById('li-run-btn');
+      if(status&&btn){
+        const filtered=keywordFilter(rows);
+        const date=new Date(modifiedTime).toLocaleDateString('he-IL');
+        status.textContent=`${rows.length} קשרים — ${filtered.length} עברו פילטר | עודכן: ${date}`;
+        btn.disabled=false;
+      }
+    }
+  }catch(e){console.error('LinkedIn Drive load error',e);}
 }
 
 function loadSavedLinkedIn(){
@@ -1134,10 +1195,10 @@ async function runLinkedInMatch(){
     return coKw.some(k=>title.includes(k)||comp.includes(k));
   });
   const pool=smartFilter.length>50?smartFilter:keywordFilter(liConnections);
-  const sample=pool.slice(0,200).map(r=>{
-    const name=`${r['First Name']||r['first name']||''} ${r['Last Name']||r['last name']||''}`.trim();
-    const title=r['Position']||r['position']||r['Title']||r['title']||'';
-    const company=r['Company']||r['company']||'';
+  const sample=pool.slice(0,150).map(r=>{
+    const name=`${r['First Name']||r['first name']||''} ${r['Last Name']||r['last name']||''}`.trim().replace(/[^\w\s\-]/g,' ');
+    const title=(r['Position']||r['position']||r['Title']||r['title']||'').replace(/[^\w\s\-,]/g,' ').slice(0,60);
+    const company=(r['Company']||r['company']||'').replace(/[^\w\s\-,]/g,' ').slice(0,40);
     return`${name} | ${title} | ${company}`;
   }).join('\n');
 
