@@ -1258,7 +1258,7 @@ No markdown, no explanation, just the JSON array.`,
       const start=clean.indexOf('[');
       const end=clean.lastIndexOf(']');
       if(start!==-1&&end!==-1){
-        const jsonStr=clean.slice(start,end+1).replace(/[ -]/g,' ');
+        const jsonStr=clean.slice(start,end+1).replace(/[-]/g,' ');
         matches=JSON.parse(jsonStr);
       }
     }catch(e){
