@@ -271,9 +271,9 @@ hr{border:none;border-top:1px solid var(--border);margin:16px 0;}
   <div class="nav-item" onclick="nav('clients')"><span>🤝</span> Clients</div>
   <div class="nav-item" onclick="nav('revenue')"><span>💰</span> My Revenue</div>
   <div class="nav-group">AI Tools</div>
-
-
-  <div class="nav-item" onclick="nav('linkedin')"><span>🎯</span> Smart Leads</div>
+  <div class="nav-item" onclick="nav('matching')"><span>🎯</span> Matching</div>
+  <div class="nav-item" onclick="nav('leads')"><span>🔍</span> Lead Finder</div>
+  <div class="nav-item" onclick="nav('linkedin')"><span>🔗</span> LinkedIn Import</div>
   <div class="nav-item" onclick="nav('ai')"><span>💬</span> AI Assistant</div>
   <div class="sidebar-footer">
     Tailwind · Omer Sadiv
@@ -440,6 +440,7 @@ hr{border:none;border-top:1px solid var(--border);margin:16px 0;}
       <div class="pill" onclick="setPF('partner',this)">Partners</div>
       <div class="pill" onclick="setPF('referrer',this)">Referrers</div>
       <div class="pill" onclick="setPF('contact',this)">Contacts</div>
+
     </div>
     <button class="btn btn-primary btn-sm" onclick="openAddPerson()">+ Add</button>
   </div>
@@ -496,23 +497,8 @@ hr{border:none;border-top:1px solid var(--border);margin:16px 0;}
 
 <!-- LINKEDIN IMPORT -->
 <div class="page" id="page-linkedin">
-  <div class="page-title">🎯 Smart Leads</div>
-  <div class="page-sub">מצא לידים חדשים מ-LinkedIn או מהרשת הקיימת שלך</div>
-  
-  <!-- TABS -->
-  <div style="display:flex;gap:8px;margin-bottom:20px;">
-    <button id="tab-linkedin-btn" onclick="switchLeadTab('linkedin')" 
-      style="padding:8px 18px;border-radius:8px;border:1px solid var(--accent);background:var(--accent);color:white;cursor:pointer;font-size:13px;font-weight:600;">
-      🔗 LinkedIn — חיבורים חדשים
-    </button>
-    <button id="tab-crm-btn" onclick="switchLeadTab('crm')"
-      style="padding:8px 18px;border-radius:8px;border:1px solid var(--border);background:var(--surf);color:var(--muted);cursor:pointer;font-size:13px;">
-      👥 רשת קיימת — CRM
-    </button>
-  </div>
-
-  <!-- LINKEDIN TAB -->
-  <div id="tab-linkedin">
+  <div class="page-title">🔗 LinkedIn Smart Import</div>
+  <div class="page-sub">Upload your LinkedIn connections and Claude finds the most relevant ones for your portfolio</div>
 
   <!-- HOW TO GET THE FILE -->
   <div style="background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:20px;">
@@ -560,33 +546,6 @@ hr{border:none;border-top:1px solid var(--border);margin:16px 0;}
 
   <!-- RESULTS -->
   <div id="li-results"></div>
-  </div><!-- end tab-linkedin -->
-
-  <!-- CRM TAB -->
-  <div id="tab-crm" style="display:none;">
-    <div class="card" style="margin-bottom:16px;">
-      <div class="form-row">
-        <div class="field"><label>Portfolio Company</label>
-          <select id="crm-co" style="margin:0;">
-            <option value="">— Choose —</option>
-            <option>Limy AI</option><option>Blings</option><option>Cytrix</option>
-            <option>VISITT</option><option>Sency AI</option><option>Shavit Group</option>
-            <option>Jessica Energy</option><option>Enabley</option><option>RePower</option>
-          </select>
-        </div>
-        <div class="field"><label>מחפש</label>
-          <select id="crm-goal" style="margin:0;">
-            <option value="partner">Channel Partner</option>
-            <option value="client">Enterprise Client</option>
-            <option value="investor">Investor</option>
-            <option value="any">Any</option>
-          </select>
-        </div>
-      </div>
-      <button class="btn btn-primary btn-sm" onclick="runCRMLeads()">🎯 Find in Network</button>
-    </div>
-    <div id="crm-lead-out"></div>
-  </div>
 </div>
 
 <!-- MATCHING -->
@@ -640,20 +599,7 @@ hr{border:none;border-top:1px solid var(--border);margin:16px 0;}
 </main>
 
 <!-- FLOATING AI ASSISTANT -->
-<!-- Claude Button — opens this conversation -->
-<div style="position:fixed;bottom:24px;right:24px;z-index:1000;">
-  <button id="float-btn" onclick="toggleFloatChat()"
-    style="width:52px;height:52px;border-radius:50%;background:var(--accent);
-      box-shadow:0 4px 16px rgba(124,111,255,0.5);font-size:22px;
-      display:flex;align-items:center;justify-content:center;
-      border:none;cursor:pointer;transition:transform 0.2s;color:white;"
-    title="AI Assistant"
-    onmouseover="this.style.transform='scale(1.1)'"
-    onmouseout="this.style.transform='scale(1)'">💬</button>
-</div>
-
-<!-- FLOAT CHAT WINDOW -->
-<div id="float-chat-window" style="display:none;position:fixed;bottom:80px;right:24px;width:360px;height:380px;
+<div id="float-chat-window" style="display:none;position:fixed;bottom:90px;right:24px;width:360px;height:380px;
   background:#1a1a2e;border:1px solid var(--border);border-radius:16px;
   box-shadow:0 8px 32px rgba(0,0,0,0.4);z-index:999;flex-direction:column;overflow:hidden;">
   <div style="padding:14px 16px;border-bottom:1px solid var(--border);font-weight:600;font-size:14px;display:flex;justify-content:space-between;align-items:center;">
@@ -668,6 +614,14 @@ hr{border:none;border-top:1px solid var(--border);margin:16px 0;}
       style="background:var(--accent);border:none;border-radius:8px;padding:8px 14px;color:white;cursor:pointer;font-size:13px;">שלח</button>
   </div>
 </div>
+<div style="position:fixed;bottom:24px;right:24px;z-index:1000;">
+  <button id="float-btn" onclick="toggleFloatChat()"
+    style="width:52px;height:52px;border-radius:50%;background:var(--accent);
+      box-shadow:0 4px 16px rgba(124,111,255,0.5);font-size:22px;
+      display:flex;align-items:center;justify-content:center;
+      border:none;cursor:pointer;transition:transform 0.2s;color:white;"
+    onmouseover="this.style.transform='scale(1.1)'"
+    onmouseout="this.style.transform='scale(1)'">💬</button>
 </div>
 <script>
 // ============================================================
@@ -747,7 +701,7 @@ let nextId=22;
 let nextClientId=100;
 let pFilter='all';
 const SK='tailwind_v5';
-// Auto-seed v5: migrate from v4 or load defaults
+// Auto-seed: load backup if no data exists
 (function(){
   try{
     if(!localStorage.getItem('tailwind_v5')){
@@ -1071,7 +1025,6 @@ function nav(id){
   if(id==='people')renderPeople();
   if(id==='clients')renderClientsPage();
   if(id==='revenue')renderRevenue();
-  if(id==='linkedin')setTimeout(()=>{if(gdriveEnabled&&gdriveToken)gdriveLinkedInLoad();else loadSavedLinkedIn();},100);
 }
 
 // ============================================================
@@ -1087,92 +1040,15 @@ function previewLinkedIn(){
     const text=e.target.result;
     const rows=parseCSV(text);
     liConnections=rows;
-    try{
-      localStorage.setItem('tailwind_linkedin_csv',text);
-      // Save to Google Drive too
-      if(gdriveEnabled&&gdriveToken) gdriveLinkedInSave(text);
-    }catch(e){}
     const status=document.getElementById('li-status');
     const btn=document.getElementById('li-run-btn');
+    status.textContent=`${rows.length} connections loaded`;
     btn.disabled=false;
+    // Quick keyword filter preview
     const filtered=keywordFilter(rows);
     status.textContent=`${rows.length} connections loaded — ${filtered.length} pass keyword filter`;
   };
   reader.readAsText(file);
-}
-
-async function gdriveLinkedInSave(csvText){
-  if(!gdriveToken)return;
-  try{
-    const fname='tailwind_linkedin.csv';
-    const search=await fetch(`https://www.googleapis.com/drive/v3/files?q=name='${fname}'&spaces=drive&fields=files(id)`,{
-      headers:{Authorization:'Bearer '+gdriveToken}
-    });
-    const res=await search.json();
-    const blob=new Blob([csvText],{type:'text/csv'});
-    if(res.files&&res.files.length>0){
-      await fetch(`https://www.googleapis.com/upload/drive/v3/files/${res.files[0].id}?uploadType=media`,{
-        method:'PATCH',headers:{Authorization:'Bearer '+gdriveToken,'Content-Type':'text/csv'},body:blob
-      });
-    } else {
-      const meta=new Blob([JSON.stringify({name:fname,mimeType:'text/csv'})],{type:'application/json'});
-      const form=new FormData();
-      form.append('metadata',meta);
-      form.append('file',blob);
-      await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',{
-        method:'POST',headers:{Authorization:'Bearer '+gdriveToken},body:form
-      });
-    }
-    notif('✅ LinkedIn CSV נשמר ב-Drive');
-  }catch(e){console.error('LinkedIn Drive save error',e);}
-}
-
-async function gdriveLinkedInLoad(){
-  if(!gdriveToken)return;
-  try{
-    const fname='tailwind_linkedin.csv';
-    const search=await fetch(`https://www.googleapis.com/drive/v3/files?q=name='${fname}'&spaces=drive&fields=files(id,modifiedTime)`,{
-      headers:{Authorization:'Bearer '+gdriveToken}
-    });
-    const res=await search.json();
-    if(res.files&&res.files.length>0){
-      const fileId=res.files[0].id;
-      const modifiedTime=res.files[0].modifiedTime;
-      const dl=await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,{
-        headers:{Authorization:'Bearer '+gdriveToken}
-      });
-      const text=await dl.text();
-      localStorage.setItem('tailwind_linkedin_csv',text);
-      localStorage.setItem('tailwind_linkedin_date',modifiedTime);
-      const rows=parseCSV(text);
-      liConnections=rows;
-      const status=document.getElementById('li-status');
-      const btn=document.getElementById('li-run-btn');
-      if(status&&btn){
-        const filtered=keywordFilter(rows);
-        const date=new Date(modifiedTime).toLocaleDateString('he-IL');
-        status.textContent=`${rows.length} קשרים — ${filtered.length} עברו פילטר | עודכן: ${date}`;
-        btn.disabled=false;
-      }
-    }
-  }catch(e){console.error('LinkedIn Drive load error',e);}
-}
-
-function loadSavedLinkedIn(){
-  try{
-    const saved=localStorage.getItem('tailwind_linkedin_csv');
-    if(saved){
-      const rows=parseCSV(saved);
-      liConnections=rows;
-      const status=document.getElementById('li-status');
-      const btn=document.getElementById('li-run-btn');
-      if(status&&btn){
-        const filtered=keywordFilter(rows);
-        status.textContent=`${rows.length} connections loaded — ${filtered.length} pass keyword filter (saved)`;
-        btn.disabled=false;
-      }
-    }
-  }catch(e){}
 }
 
 function parseCSV(text){
@@ -1204,49 +1080,6 @@ function keywordFilter(rows){
   });
 }
 
-// ── GOAL-BASED FILTERS ──────────────────────────────────────
-const GOAL_FILTERS={
-  'Investor':       ['partner','managing director','general partner','fund','venture','vc','angel','investment','capital','portfolio'],
-  'Channel Partner':['vp sales','head of sales','bd','business development','partnerships','channel','distributor','reseller','alliance','sales director'],
-  'Enterprise Client':['cmo','vp marketing','head of marketing','chief marketing','vp digital','head of digital','director of marketing','marketing director','vp ecommerce'],
-  'Strategic Partner':['ceo','founder','co-founder','president','managing director','general manager','chief'],
-  'Reseller':       ['sales','account executive','regional manager','territory','business development','channel'],
-};
-
-const CO_FILTERS={
-  'Limy AI':      ['marketing','brand','digital','ecommerce','cmo','growth','seo','media','retail','pharma','fmcg','consumer','advertising'],
-  'Blings':       ['marketing','video','media','brand','digital','cmo','content','advertising','retail','telecom'],
-  'Cytrix':       ['cyber','security','ciso','cso','infosec','risk','compliance','soc','pentest'],
-  'VISITT':       ['real estate','property','proptech','building','facility','asset','realty','construction','landlord'],
-  'Sency AI':     ['fitness','health','sport','wellness','physical','training','gym','insurance','rehab'],
-  'Shavit Group': ['intelligence','osint','government','defense','security','law enforcement','military'],
-  'Jessica Energy':['agriculture','energy','solar','agri','farming','cleantech','sustainability','kibbutz'],
-  'Enabley':      ['hr','learning','training','l&d','workforce','operations','retail','logistics','deskless'],
-  'RePower':      ['biogas','energy','waste','environmental','industrial','cleantech','sustainability','biogas'],
-};
-
-function smartFilterConnections(rows, co, goal){
-  const coKw=CO_FILTERS[co]||[];
-  const goalKw=GOAL_FILTERS[goal]||[];
-  // Score each connection
-  return rows.map(r=>{
-    const title=((r['Position']||r['position']||r['Title']||r['title']||'')).toLowerCase();
-    const comp=((r['Company']||r['company']||'')).toLowerCase();
-    let score=0;
-    coKw.forEach(k=>{if(title.includes(k)||comp.includes(k))score+=2;});
-    goalKw.forEach(k=>{if(title.includes(k))score+=3;});
-    // Seniority bonus
-    ['ceo','cto','cmo','ciso','founder','president','vp','svp','evp','director','head of','partner','managing'].forEach(k=>{
-      if(title.includes(k))score+=2;
-    });
-    return{...r,_score:score};
-  }).filter(r=>r._score>0).sort((a,b)=>b._score-a._score);
-}
-
-let liResultsCache=[];
-let liCurrentBatch=0;
-const LI_BATCH_SIZE=10;
-
 async function runLinkedInMatch(){
   const results=document.getElementById('li-results');
   const co=document.getElementById('li-co').value;
@@ -1257,174 +1090,58 @@ async function runLinkedInMatch(){
     return;
   }
 
-  liCurrentBatch=0;
-  liResultsCache=[];
+  results.innerHTML=`<div style="text-align:center;padding:40px;color:var(--muted);"><div class="spinner" style="margin:0 auto 12px;"></div>מנתח ${liConnections.length} קשרים…</div>`;
 
-  results.innerHTML=`<div style="text-align:center;padding:40px;color:var(--muted);"><div class="spinner" style="margin:0 auto 12px;"></div><div>שלב 1: סינון חכם מתוך ${liConnections.length} קשרים…</div></div>`;
-
-  const scored=smartFilterConnections(liConnections,co,goal);
-  const top=scored.slice(0,200);
-
-  results.innerHTML=`<div style="text-align:center;padding:40px;color:var(--muted);"><div class="spinner" style="margin:0 auto 12px;"></div><div>שלב 2: AI מנתח ${top.length} קשרים רלוונטיים…</div></div>`;
-
-  const sample=top.slice(0,180).map((r,i)=>{
-    const name=`${r['First Name']||r['first name']||''} ${r['Last Name']||r['last name']||''}`.trim().replace(/[^\w\s\-]/g,' ');
-    const title=(r['Position']||r['position']||r['Title']||r['title']||'').replace(/[^\w\s\-,&]/g,' ').slice(0,60);
-    const company=(r['Company']||r['company']||'').replace(/[^\w\s\-,&]/g,' ').slice(0,40);
-    return`${i+1}. ${name} | ${title} | ${company}`;
+  // Prepare connections summary (limit to 200)
+  const sample=liConnections.slice(0,200).map(r=>{
+    const name=`${r['First Name']||r['first name']||''} ${r['Last Name']||r['last name']||''}`.trim();
+    const title=r['Position']||r['position']||r['Title']||r['title']||'';
+    const company=r['Company']||r['company']||'';
+    return`${name} | ${title} | ${company}`;
   }).join('\n');
 
   const coData=COMPANIES.find(c=>c.name===co);
+  const existing=PEOPLE.map(p=>p.name).join(', ');
 
   try{
     const res=await fetch(WORKER_URL,{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
-        model:'claude-haiku-4-5-20251001',
-        max_tokens:2000,
-        system:`You are a senior BD analyst for Tailwind, an Israeli BD firm (founder: Omer Sadiv, ex-Pernod Ricard).
-Portfolio company: ${co} — ${coData?.desc||coData?.category||''}
-Looking for: ${goal}
-
-Return ONLY a valid JSON array. Each item: {"name":"...","title":"...","company":"...","fit":"Client/Partner/Investor","score":1-10,"why":"1 sharp sentence about fit","action":"specific first message approach","companyType":"what their company does in 5 words"}
-No markdown, no explanation, just the JSON array.`,
-        messages:[{role:'user',content:`From this scored list, pick the TOP 20 best fits for ${co} as ${goal}. Return ONLY JSON array.\n\n${sample}`}]
+        system:`You are a BD advisor for Tailwind (Omer Sadiv, Israeli BD firm, ex-Pernod Ricard).
+Company: ${co} — ${coData?.desc||coData?.category||''}
+Goal: ${goal}
+Already in CRM: ${existing}
+From the LinkedIn connections below, find the TOP 10 most relevant people.
+Return ONLY JSON array:
+[{"name":"...","title":"...","company":"...","why":"2 sentences","action":"specific intro approach"}]
+Raw JSON only.`,
+        messages:[{role:'user',content:`LinkedIn connections:\n${sample}`}]
       })
     });
     const data=await res.json();
     const text=data.content?.map(i=>i.text||'').join('')||'';
-    let matches=[];
-    try{
-      const clean=text.replace(/\`\`\`json|\`\`\`/g,'').trim();
-      const start=clean.indexOf('[');
-      const end=clean.lastIndexOf(']');
-      if(start!==-1&&end!==-1){
-        const jsonStr=clean.slice(start,end+1).replace(/[-]/g,' ');
-        matches=JSON.parse(jsonStr);
-      }
-    }catch(e){
-      results.innerHTML=`<div style="color:var(--red);padding:20px;">שגיאת עיבוד — נסה שוב</div>`;
-      return;
-    }
+    const matches=JSON.parse(text.replace(/```json|```/g,'').trim());
 
-    liResultsCache=matches;
-    liCurrentBatch=0;
-    renderLinkedInBatch(co,goal,false);
-
+    results.innerHTML=`
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--accent);margin-bottom:14px;">
+        🎯 Top ${matches.length} Matches מ-LinkedIn — ${co}
+      </div>
+      ${matches.map(m=>`
+        <div style="background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:10px;">
+          <div style="margin-bottom:6px;">
+            <span style="font-size:14px;font-weight:700;">${m.name}</span>
+            <span style="font-size:11px;color:var(--accent);margin-left:8px;">${m.title} @ ${m.company}</span>
+          </div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">${m.why}</div>
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div style="font-size:12px;color:var(--yellow);">→ ${m.action}</div>
+            <button class="btn btn-green btn-xs" onclick="addLinkedInMatchTocrm(${JSON.stringify(m).replace(/"/g,'&quot;')})">+ הוסף ל-CRM</button>
+          </div>
+        </div>`).join('')}`;
   }catch(e){
     results.innerHTML=`<div style="color:var(--red);padding:20px;text-align:center;">שגיאה — נסה שוב</div>`;
     console.error(e);
-  }
-}
-
-function renderLinkedInBatch(co,goal,append){
-  const results=document.getElementById('li-results');
-  const start=liCurrentBatch*LI_BATCH_SIZE;
-  const batch=liResultsCache.slice(start,start+LI_BATCH_SIZE);
-  const hasMore=liResultsCache.length>start+LI_BATCH_SIZE;
-
-  const cards=batch.map((m,i)=>{
-    const scoreColor=m.score>=8?'#00e5b0':m.score>=6?'#7c6fff':'#ffd166';
-    const mStr=JSON.stringify(m).replace(/"/g,'&quot;');
-    return`<div style="background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:10px;">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
-        <div>
-          <span style="font-size:14px;font-weight:700;">${m.name}</span>
-          <span style="font-size:11px;color:var(--accent);margin-left:8px;">${m.title||''} @ ${m.company||''}</span>
-        </div>
-        <div style="display:flex;gap:6px;align-items:center;">
-          <span style="background:${scoreColor}22;color:${scoreColor};border:1px solid ${scoreColor}44;border-radius:8px;padding:2px 8px;font-size:11px;font-weight:700;">${m.score}/10</span>
-          <span style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:2px 8px;font-size:10px;color:var(--muted);">${m.fit||goal}</span>
-        </div>
-      </div>
-      ${m.companyType?`<div style="font-size:11px;color:var(--muted);margin-bottom:6px;">🏢 ${m.companyType}</div>`:''}
-      <div style="font-size:12px;color:var(--text);margin-bottom:8px;">${m.why||''}</div>
-      <div style="font-size:12px;color:var(--yellow);margin-bottom:10px;">→ ${m.action||''}</div>
-      <div style="display:flex;gap:8px;">
-        <button class="btn btn-xs" style="background:var(--accent);color:white;border:none;" onclick="generateIntroMsg(${mStr},'${co}','${goal}')">✉ Generate Intro</button>
-        <button class="btn btn-green btn-xs" onclick="addLinkedInMatchTocrm(${mStr})">+ CRM</button>
-      </div>
-    </div>`;
-  }).join('');
-
-  if(append){
-    const existing=results.innerHTML;
-    const btnIdx=existing.lastIndexOf('<button');
-    results.innerHTML=existing.slice(0,btnIdx)+cards+(hasMore?`<button onclick="loadMoreLinkedIn('${co}','${goal}')" style="width:100%;padding:10px;background:var(--surf);border:1px solid var(--border);border-radius:10px;color:var(--accent);cursor:pointer;font-size:13px;">טען עוד ${Math.min(LI_BATCH_SIZE,liResultsCache.length-start-LI_BATCH_SIZE)} תוצאות ↓</button>`:'');
-  }else{
-    results.innerHTML=`
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--accent);">🎯 ${liResultsCache.length} Matches — ${co} · ${goal}</div>
-        <div style="font-size:11px;color:var(--muted);">מציג ${Math.min(LI_BATCH_SIZE,liResultsCache.length)} מתוך ${liResultsCache.length}</div>
-      </div>
-      ${cards}
-      ${hasMore?`<button onclick="loadMoreLinkedIn('${co}','${goal}')" style="width:100%;padding:10px;background:var(--surf);border:1px solid var(--border);border-radius:10px;color:var(--accent);cursor:pointer;font-size:13px;margin-top:4px;">טען עוד ${Math.min(LI_BATCH_SIZE,liResultsCache.length-LI_BATCH_SIZE)} תוצאות ↓</button>`:''}`;
-  }
-}
-
-function loadMoreLinkedIn(co,goal){
-  liCurrentBatch++;
-  renderLinkedInBatch(co,goal,true);
-}
-
-async function generateIntroMsg(m,co,goal){
-  // Show channel selector
-  const overlay=document.createElement('div');
-  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;';
-  overlay.innerHTML=`
-    <div style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:28px;width:420px;max-width:95vw;">
-      <div style="font-size:16px;font-weight:700;margin-bottom:6px;">✉ Generate Intro Message</div>
-      <div style="font-size:13px;color:var(--muted);margin-bottom:20px;">${m.name} — ${m.title} @ ${m.company}</div>
-      <div style="display:flex;gap:10px;margin-bottom:20px;">
-        <button onclick="doGenerateIntro(${JSON.stringify(m).replace(/"/g,'&quot;')},'${co}','${goal}','linkedin',this.closest('div[style*=fixed]'))"
-          style="flex:1;padding:12px;background:var(--surf);border:1px solid var(--border);border-radius:10px;color:var(--text);cursor:pointer;font-size:13px;">
-          💼 LinkedIn DM
-        </button>
-        <button onclick="doGenerateIntro(${JSON.stringify(m).replace(/"/g,'&quot;')},'${co}','${goal}','email',this.closest('div[style*=fixed]'))"
-          style="flex:1;padding:12px;background:var(--surf);border:1px solid var(--border);border-radius:10px;color:var(--text);cursor:pointer;font-size:13px;">
-          📧 Email
-        </button>
-        <button onclick="doGenerateIntro(${JSON.stringify(m).replace(/"/g,'&quot;')},'${co}','${goal}','whatsapp',this.closest('div[style*=fixed]'))"
-          style="flex:1;padding:12px;background:var(--surf);border:1px solid var(--border);border-radius:10px;color:var(--text);cursor:pointer;font-size:13px;">
-          💬 WhatsApp
-        </button>
-      </div>
-      <button onclick="this.closest('div[style*=fixed]').remove()" style="width:100%;padding:8px;background:none;border:1px solid var(--border);border-radius:8px;color:var(--muted);cursor:pointer;">ביטול</button>
-    </div>`;
-  document.body.appendChild(overlay);
-}
-
-async function doGenerateIntro(m,co,goal,channel,overlayEl){
-  overlayEl.innerHTML=`<div style="background:var(--card);border-radius:16px;padding:40px;text-align:center;color:var(--muted);"><div class="spinner" style="margin:0 auto 16px;"></div>מנסח הודעה…</div>`;
-  const coData=COMPANIES.find(c=>c.name===co);
-  const channelGuide={'linkedin':'LinkedIn DM — max 300 chars, warm, no pitch','email':'Professional email — subject line + 3 short paragraphs','whatsapp':'WhatsApp — casual, short, friendly, max 150 chars'};
-  try{
-    const res=await fetch(WORKER_URL,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        model:'claude-haiku-4-5-20251001',
-        max_tokens:600,
-        system:`You are Omer Sadiv, founder of Tailwind (Israeli BD firm, ex-Pernod Ricard). Write a personalized outreach message. Be specific, warm, no generic phrases. Reference their role and company. Channel: ${channelGuide[channel]}`,
-        messages:[{role:'user',content:`Write a ${channel} message to ${m.name}, ${m.title} at ${m.company}. Purpose: introduce ${co} (${coData?.desc||''}) and explore ${goal} opportunity. Their company does: ${m.companyType||''}. Reason they fit: ${m.why||''}.`}]
-      })
-    });
-    const data=await res.json();
-    const msg=data.content?.map(i=>i.text||'').join('')||'';
-    overlayEl.innerHTML=`
-      <div style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px;width:500px;max-width:95vw;">
-        <div style="font-size:14px;font-weight:700;margin-bottom:16px;">✉ ${channel==='linkedin'?'LinkedIn DM':channel==='email'?'Email':'WhatsApp'} — ${m.name}</div>
-        <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:16px;font-size:13px;line-height:1.6;white-space:pre-wrap;margin-bottom:16px;">${msg}</div>
-        <div style="display:flex;gap:10px;">
-          <button onclick="navigator.clipboard.writeText(this.closest('div').previousElementSibling.textContent);notif('הועתק ✓')" 
-            style="flex:1;padding:10px;background:var(--accent);border:none;border-radius:8px;color:white;cursor:pointer;font-size:13px;">📋 העתק</button>
-          <button onclick="this.closest('div[style*=fixed]').remove()" 
-            style="flex:1;padding:10px;background:var(--surf);border:1px solid var(--border);border-radius:8px;color:var(--text);cursor:pointer;font-size:13px;">סגור</button>
-        </div>
-      </div>`;
-  }catch(e){
-    overlayEl.innerHTML=`<div style="background:var(--card);border-radius:16px;padding:24px;color:var(--red);">שגיאה — נסה שוב</div>`;
   }
 }
 
@@ -2062,11 +1779,9 @@ function openCompanyModal(coId){
     <div class="modal-sub">${co.category}</div>
 
     <!-- WEBSITE + PDF -->
-    <div class="co-links" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+    <div class="co-links">
       ${co.website?`<a class="co-link-btn co-link-website" href="${co.website}" target="_blank">🌐 ${co.website}</a>`:`<button class="co-link-btn" style="background:var(--surf2);border:1px solid var(--border);color:var(--muted);" onclick="editCoWebsite('${co.id}')">🌐 Add אתר</button>`}
-      <button onclick="scanCompany('${co.id}')" style="padding:6px 12px;background:var(--surf2);border:1px solid var(--border);border-radius:8px;color:var(--accent);cursor:pointer;font-size:12px;">🔍 Scan & Update</button>
     </div>
-    <div id="scan-result-${co.id}" style="font-size:12px;color:var(--muted);margin-top:6px;"></div>
 
     <div class="msec">
       <div class="msec-title">📎 Presentations & Files</div>
@@ -3095,7 +2810,7 @@ async function runMatching(){
     const res=await fetch(WORKER_URL,{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:"claude-haiku-4-5-20251001",max_tokens:1000,
+      body:JSON.stringify({
         system:`You are a BD advisor for Tailwind (Omer Sadiv, Israeli BD firm, ex-Pernod Ricard).
 Portfolio company: ${co} — ${coData?.desc||coData?.category||''}
 Goal: ${goal}
@@ -3607,107 +3322,6 @@ function closePdfViewer(){
   document.getElementById('pdf-viewer').style.display='none';
   document.getElementById('pdf-viewer-frame').src='';
 }
-function switchLeadTab(tab){
-  document.getElementById('tab-linkedin').style.display=tab==='linkedin'?'block':'none';
-  document.getElementById('tab-crm').style.display=tab==='crm'?'block':'none';
-  const lBtn=document.getElementById('tab-linkedin-btn');
-  const cBtn=document.getElementById('tab-crm-btn');
-  if(tab==='linkedin'){
-    lBtn.style.background='var(--accent)';lBtn.style.color='white';lBtn.style.borderColor='var(--accent)';
-    cBtn.style.background='var(--surf)';cBtn.style.color='var(--muted)';cBtn.style.borderColor='var(--border)';
-  }else{
-    cBtn.style.background='var(--accent)';cBtn.style.color='white';cBtn.style.borderColor='var(--accent)';
-    lBtn.style.background='var(--surf)';lBtn.style.color='var(--muted)';lBtn.style.borderColor='var(--border)';
-  }
-}
-
-async function runCRMLeads(){
-  const co=document.getElementById('crm-co').value;
-  const type=document.getElementById('crm-goal').value;
-  const out=document.getElementById('crm-lead-out');
-  if(!co){notif('בחר חברה תחילה');return;}
-  out.innerHTML=`<div style="text-align:center;padding:40px;color:var(--muted);"><div class="spinner" style="margin:0 auto 12px;"></div>מנתח רשת...</div>`;
-  const coData=COMPANIES.find(c=>c.name===co);
-  const peopleSummary=PEOPLE.filter(p=>p.id!==0).map(p=>
-    `${p.name} | ${p.type} | ${p.role} | ${p.company} | ${p.geo} | companies: ${(p.companies||[]).join(',')} | strength: ${p.strength||0}`
-  ).join('\n');
-  try{
-    const res=await fetch(WORKER_URL,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        model:'claude-haiku-4-5-20251001',
-        max_tokens:1500,
-        system:`Return ONLY a valid JSON array. Each item: {"name":"...","role":"...","company":"...","score":1-10,"why":"1 sentence why they fit","action":"specific next step"}`,
-        messages:[{role:'user',content:`Find best matches in this CRM network for ${co} (${coData?.desc||''}) looking for ${type}. Return TOP 8 as JSON array.\n\n${peopleSummary}`}]
-      })
-    });
-    const data=await res.json();
-    const text=data.content?.map(i=>i.text||'').join('')||'';
-    let matches=[];
-    const start=text.indexOf('[');const end=text.lastIndexOf(']');
-    if(start!==-1&&end!==-1)matches=JSON.parse(text.slice(start,end+1).replace(/[\u0000-\u001f\u007f]/g,' '));
-    out.innerHTML=`
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--accent);margin-bottom:14px;">
-        🎯 ${matches.length} התאמות מהרשת — ${co}
-      </div>
-      ${matches.map(m=>{
-        const sc=m.score>=8?'#00e5b0':m.score>=6?'#7c6fff':'#ffd166';
-        return`<div style="background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:10px;">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-            <div><span style="font-size:14px;font-weight:700;">${m.name}</span>
-            <span style="font-size:11px;color:var(--accent);margin-left:8px;">${m.role||''} @ ${m.company||''}</span></div>
-            <span style="background:${sc}22;color:${sc};border:1px solid ${sc}44;border-radius:8px;padding:2px 8px;font-size:11px;font-weight:700;">${m.score}/10</span>
-          </div>
-          <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">${m.why||''}</div>
-          <div style="font-size:12px;color:var(--yellow);">→ ${m.action||''}</div>
-        </div>`;
-      }).join('')}`;
-  }catch(e){out.innerHTML=`<div style="color:var(--red);padding:20px;">שגיאה — נסה שוב</div>`;}
-}
-
-async function scanCompany(coId){
-  const co=COMPANIES.find(c=>c.id===coId);if(!co)return;
-  const resultEl=document.getElementById('scan-result-'+coId);
-  if(!co.website){resultEl.textContent='אין אתר מוגדר — הוסף קודם כתובת אתר';return;}
-  resultEl.innerHTML='<span style="color:var(--accent)">🔍 סורק...</span>';
-  try{
-    const res=await fetch(WORKER_URL,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        model:'claude-haiku-4-5-20251001',
-        max_tokens:800,
-        tools:[{type:'web_search_20250305',name:'web_search'}],
-        system:`You are a research assistant. Search for info about the company and return ONLY a JSON object with these fields:
-{"desc":"what the company does in 1-2 sentences","clients":"key clients or target market","raised":"funding info if any","category":"industry category","icp":"ideal customer profile — who buys this product, their title and industry"}
-Return ONLY valid JSON, no markdown.`,
-        messages:[{role:'user',content:`Search for latest info about ${co.name} (${co.website}). What do they do, who are their clients, any recent news or funding?`}]
-      })
-    });
-    const data=await res.json();
-    const text=data.content?.filter(i=>i.type==='text').map(i=>i.text||'').join('')||'';
-    let info;
-    try{
-      const start=text.indexOf('{');const end=text.lastIndexOf('}');
-      info=JSON.parse(text.slice(start,end+1));
-    }catch(e){resultEl.innerHTML='<span style="color:var(--red)">לא הצלחתי לפרסר — נסה שוב</span>';return;}
-    // Update company fields
-    if(info.desc)co.desc=info.desc;
-    if(info.clients)co.clients=info.clients;
-    if(info.raised&&info.raised!=='—')co.raised=info.raised;
-    if(info.category)co.category=info.category;
-    if(info.icp)co.icp=info.icp;
-    co.lastScanned=new Date().toLocaleDateString('he-IL');
-    notif(`${co.name} עודכן ✓`);
-    resultEl.innerHTML=`<span style="color:var(--green)">✓ עודכן ${co.lastScanned}</span>${info.icp?` — ICP: ${info.icp.slice(0,80)}...`:''}`;
-    openCompanyModal(coId);
-  }catch(e){
-    resultEl.innerHTML='<span style="color:var(--red)">שגיאה — נסה שוב</span>';
-    console.error(e);
-  }
-}
-
 function editCoWebsite(coId){
   const url=prompt('Enter website URL:','https://');
   if(!url||url==='https://')return;
@@ -3785,23 +3399,20 @@ function buildContext(){
     const people=PEOPLE.filter(p=>p.companies&&p.companies.includes(co.name));
     const clients=CLIENTS.filter(c=>c.portfolioCo===co.name);
     const clientNames=clients.map(c=>c.name+'('+c.stage+')').join(', ');
-    return co.name+' ('+co.category+', '+co.commissionPct+'% comm): partners=['+people.map(p=>p.name).join(', ')+'], clients=['+clientNames+']';
+    return co.name+' | '+co.category+' | partners: '+people.map(p=>p.name).join(',')+' | clients: '+clientNames;
   }).join('\n');
-  const peopleSummary=PEOPLE.map(p=>'id:'+p.id+' | '+p.name+' | '+tl(p.type)+' | '+p.role+' | '+p.company+' | '+p.geo+' | status:'+sl(p.status)+' | companies:'+((p.companies||[]).join(','))).join('\n');
+  const peopleSummary=PEOPLE.map(p=>'id:'+p.id+' '+p.name+' | '+tl(p.type)+' | '+p.role+' | '+p.company+' | '+p.geo+' | status:'+sl(p.status)+' | cos:'+(p.companies||[]).join(',')).join('\n');
   const companyNames=COMPANIES.map(c=>c.name).join(', ');
-  const instructions=[
-    'You are an AI assistant for Tailwind CRM (Omer Sadiv, Israeli BD firm).',
-    'PORTFOLIO COMPANIES: '+companyNames,
-    'COMPANIES DETAIL: '+companySummary,
-    'PEOPLE IN CRM: '+peopleSummary,
-    'INSTRUCTIONS:',
-    '- Answer questions concisely in Hebrew or English based on user language',
-    '- To ADD a person respond ONLY with JSON: action=add_person, fields: name,type,role,company,geo,companies,status,notes',
-    '- To UPDATE status respond ONLY with JSON: action=update_status, fields: personId,personName,newStatus',
-    '- To ADD CLIENT respond ONLY with JSON: action=add_client, fields: personId,personName,company,clientName,clientType',
-    'For actions return ONLY valid JSON. For questions return only text.'
-  ].join('\n');
-  return instructions;
+  return 'You are an AI assistant for Tailwind CRM (Omer Sadiv, Israeli BD firm).\n'+
+    'PORTFOLIO: '+companyNames+'\n'+
+    'COMPANIES:\n'+companySummary+'\n'+
+    'PEOPLE:\n'+peopleSummary+'\n'+
+    'INSTRUCTIONS:\n'+
+    '- Answer in Hebrew or English based on user language\n'+
+    '- To ADD a person respond ONLY with JSON: action=add_person, name, type, role, company, geo, companies, status, notes\n'+
+    '- To UPDATE status respond ONLY with JSON: action=update_status, personId, personName, newStatus\n'+
+    '- To ADD CLIENT respond ONLY with JSON: action=add_client, personId, personName, company, clientName, clientType\n'+
+    'For actions return ONLY valid JSON. For questions return only text.';
 }
 
 function buildActionCard(action){
