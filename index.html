@@ -1223,7 +1223,12 @@ Raw JSON only.`,
     });
     const data=await res.json();
     const text=data.content?.map(i=>i.text||'').join('')||'';
-    const matches=JSON.parse(text.replace(/```json|```/g,'').trim());
+    const clean=text.replace(/```json|```/g,'').trim();
+    // Extract JSON array safely
+    const start=clean.indexOf('[');
+    const end=clean.lastIndexOf(']');
+    if(start===-1||end===-1)throw new Error('No JSON array found');
+    const matches=JSON.parse(clean.slice(start,end+1));
 
     results.innerHTML=`
       <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--accent);margin-bottom:14px;">
