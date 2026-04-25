@@ -1114,7 +1114,27 @@ async function runLinkedInMatch(){
   results.innerHTML=`<div style="text-align:center;padding:40px;color:var(--muted);"><div class="spinner" style="margin:0 auto 12px;"></div>מנתח ${liConnections.length} קשרים…</div>`;
 
   // Prepare connections summary (limit to 200)
-  const sample=liConnections.slice(0,200).map(r=>{
+  // Smart filter by company category
+  const coKeywords={
+    'Limy AI':['marketing','brand','digital','ecommerce','e-commerce','cmo','growth','seo','media','retail','pharma','fmcg','consumer'],
+    'Blings':['marketing','video','media','brand','digital','cmo','content','advertising','retail','telecom'],
+    'Cytrix':['cyber','security','ciso','cso','infosec','risk','compliance','it','technology'],
+    'VISITT':['real estate','property','proptech','building','facility','asset','realty','construction'],
+    'Sency AI':['fitness','health','sport','wellness','physical','training','gym','insurance'],
+    'Shavit Group':['intelligence','osint','government','defense','security','law enforcement'],
+    'Jessica Energy':['agriculture','energy','solar','agri','farming','cleantech','sustainability'],
+    'Enabley':['hr','learning','training','l&d','workforce','operations','retail','logistics'],
+    'RePower':['biogas','energy','waste','environmental','industrial','cleantech','sustainability']
+  };
+  const coKw=coKeywords[co]||[];
+  const smartFilter=liConnections.filter(r=>{
+    const title=((r.Position||r.position||r.Title||r.title||'')).toLowerCase();
+    const comp=((r.Company||r.company||'')).toLowerCase();
+    if(coKw.length===0)return keywordFilter([r]).length>0;
+    return coKw.some(k=>title.includes(k)||comp.includes(k));
+  });
+  const pool=smartFilter.length>50?smartFilter:keywordFilter(liConnections);
+  const sample=pool.slice(0,200).map(r=>{
     const name=`${r['First Name']||r['first name']||''} ${r['Last Name']||r['last name']||''}`.trim();
     const title=r['Position']||r['position']||r['Title']||r['title']||'';
     const company=r['Company']||r['company']||'';
