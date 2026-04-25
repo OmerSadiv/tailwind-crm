@@ -1142,25 +1142,86 @@ async function runLinkedInMatch(){
       return;
     }
 
-    results.innerHTML=`
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--accent);margin-bottom:14px;">
-        🎯 Top ${matches.length} Matches מ-LinkedIn — ${co}
-      </div>
-      ${matches.map(m=>`
-        <div style="background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:10px;">
-          <div style="margin-bottom:6px;">
-            <span style="font-size:14px;font-weight:700;">${m.name}</span>
-            <span style="font-size:11px;color:var(--accent);margin-left:8px;">${m.title} @ ${m.company}</span>
-          </div>
-          <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">${m.why}</div>
-          <div style="display:flex;justify-content:space-between;align-items:center;">
-            <div style="font-size:12px;color:var(--yellow);">→ ${m.action}</div>
-            <button class="btn btn-green btn-xs" onclick="addLinkedInMatchTocrm(${JSON.stringify(m).replace(/"/g,'&quot;')})">+ הוסף ל-CRM</button>
-          </div>
-        </div>`).join('')}`;
+    // Stage 2: web search on each company
+    results.innerHTML='<div style="text-align:center;padding:40px;color:var(--muted);"><div class="spinner" style="margin:0 auto 12px;"></div>שלב 2: בודק חברות ברשת...</div>';
+
+    const enriched = await enrichWithWebSearch(matches, co, goal);
+    // Sort by final score
+    enriched.sort(function(a,b){ return (b.finalScore||b.score||0)-(a.finalScore||a.score||0); });
+
+    renderLinkedInResults(enriched, co, results);
+
   }catch(e){
-    results.innerHTML=`<div style="color:var(--red);padding:20px;text-align:center;">שגיאה — נסה שוב</div>`;
+    results.innerHTML='<div style="color:var(--red);padding:20px;text-align:center;">שגיאה — נסה שוב</div>';
     console.error(e);
+  }
+}
+
+function renderLinkedInResults(matches, co, results){
+  var html='<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--accent);margin-bottom:14px;">🎯 Top '+matches.length+' Matches מ-LinkedIn — '+co+'</div>';
+  matches.forEach(function(m){
+    var score=m.finalScore||m.score||0;
+    var sc=score>=8?'#00e5b0':score>=6?'#7c6fff':'#ffd166';
+    var webInfo=m.webInsight?('<div style="font-size:11px;color:#7c6fff;margin-bottom:6px;border-left:2px solid #7c6fff;padding-left:8px;">🌐 '+m.webInsight+'</div>'):'';
+    html+='<div style="background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:10px;">';
+    html+='<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">';
+    html+='<div><span style="font-size:14px;font-weight:700;">'+m.name+'</span>';
+    html+='<span style="font-size:11px;color:var(--accent);margin-left:8px;">'+(m.title||'')+' @ '+(m.company||'')+'</span></div>';
+    html+='<span style="background:'+sc+'22;color:'+sc+';border:1px solid '+sc+'44;border-radius:8px;padding:2px 8px;font-size:11px;font-weight:700;">'+score+'/10</span>';
+    html+='</div>';
+    html+=webInfo;
+    html+='<div style="font-size:12px;color:var(--muted);margin-bottom:8px;">'+(m.why||'')+'</div>';
+    html+='<div style="display:flex;justify-content:space-between;align-items:center;">';
+    html+='<div style="font-size:12px;color:var(--yellow);">→ '+(m.action||'')+'</div>';
+    var mStr=JSON.stringify(m).replace(/"/g,'&quot;');
+    html+='<button class="btn btn-green btn-xs" onclick="addLinkedInMatchTocrm('+mStr+')">+ CRM</button>';
+    html+='</div></div>';
+  });
+  results.innerHTML=html;
+}
+
+async function enrichWithWebSearch(matches, co, goal){
+  const coData=COMPANIES.find(c=>c.name===co);
+  const coDesc=coData&&coData.desc||coData&&coData.category||co;
+
+  // Build search queries for all companies at once
+  const companies=[...new Set(matches.map(function(m){return m.company;}).filter(Boolean))];
+  const queryList=companies.map(function(c){return c+' company what they do';}).join(', ');
+
+  try{
+    const res=await fetch(WORKER_URL,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-haiku-4-5-20251001',
+        max_tokens:2000,
+        tools:[{type:'web_search_20250305',name:'web_search'}],
+        system:'You are a BD research analyst. For each company, search and find: what they do, their size, and whether they are a good fit as '+goal+' for '+co+' ('+coDesc+'). Return ONLY a JSON array: [{"company":"...","insight":"1 sentence what they do","fit":"High/Medium/Low","reason":"why fit or not fit for '+goal+'","scoreAdjust":-2 to +3}]',
+        messages:[{role:'user',content:'Research these companies and assess fit as '+goal+' for '+co+': '+companies.slice(0,10).join(', ')}]
+      })
+    });
+    const data=await res.json();
+    const text=data.content&&data.content.filter(function(i){return i.type==='text';}).map(function(i){return i.text||'';}).join('')||'';
+    let companyData=[];
+    try{
+      const s=text.indexOf('['),e=text.lastIndexOf(']');
+      if(s!==-1&&e!==-1)companyData=JSON.parse(text.slice(s,e+1).replace(/[ -]/g,' '));
+    }catch(err){}
+
+    // Merge web insights back into matches
+    return matches.map(function(m){
+      const info=companyData.find(function(c){return c.company&&m.company&&c.company.toLowerCase().includes(m.company.toLowerCase().slice(0,10));});
+      if(info){
+        return Object.assign({},m,{
+          webInsight:(info.insight||'')+(info.reason?' | '+info.reason:''),
+          finalScore:Math.min(10,Math.max(1,(m.score||5)+(info.scoreAdjust||0)))
+        });
+      }
+      return Object.assign({},m,{finalScore:m.score||5});
+    });
+  }catch(err){
+    // If web search fails, return original matches unchanged
+    return matches.map(function(m){return Object.assign({},m,{finalScore:m.score||5});});
   }
 }
 
