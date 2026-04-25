@@ -1163,6 +1163,21 @@ async function runLinkedInMatch(){
       results.innerHTML='<div style="color:var(--red);padding:20px;">שגיאת עיבוד — נסה שוב</div>';
       return;
     }
+    // Verify matches actually exist in LinkedIn connections (AI sometimes hallucinates)
+    matches=matches.filter(function(m){
+      if(!m.name)return false;
+      const mName=m.name.toLowerCase().trim();
+      return liConnections.some(function(r){
+        const fn=(r['First Name']||r['first name']||'').toLowerCase().trim();
+        const ln=(r['Last Name']||r['last name']||'').toLowerCase().trim();
+        const full=(fn+' '+ln).trim();
+        return full===mName||mName.includes(fn)&&mName.includes(ln);
+      });
+    });
+    if(matches.length===0){
+      results.innerHTML='<div style="color:var(--red);padding:20px;text-align:center;">לא נמצאו התאמות — נסה שוב עם פרמטרים אחרים</div>';
+      return;
+    }
 
     // Stage 2: web search on each company
     results.innerHTML='<div style="text-align:center;padding:40px;color:var(--muted);"><div class="spinner" style="margin:0 auto 12px;"></div>שלב 2: בודק חברות ברשת...</div>';
