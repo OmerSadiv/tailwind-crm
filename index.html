@@ -493,58 +493,7 @@ hr{border:none;border-top:1px solid var(--border);margin:16px 0;}
   <div id="revenue-content"></div>
 </div>
 
-<!-- LINKEDIN IMPORT -->
-<div class="page" id="page-linkedin-old" style="display:none">
-  <div class="page-title">🔗 LinkedIn Smart Import</div>
-  <div class="page-sub">Upload your LinkedIn connections and Claude finds the most relevant ones for your portfolio</div>
 
-  <!-- HOW TO GET THE FILE -->
-  <div style="background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:20px;">
-    <div style="font-size:13px;font-weight:700;margin-bottom:12px;">📥 How to get your LinkedIn connections file:</div>
-    <div style="display:flex;flex-direction:column;gap:8px;font-size:12px;color:var(--muted);line-height:1.7;">
-      <div><span style="color:var(--accent);font-weight:600;">1.</span> Go to <a href="https://www.linkedin.com/mypreferences/d/download-my-data" target="_blank" style="color:var(--accent);">linkedin.com/mypreferences/d/download-my-data</a></div>
-      <div><span style="color:var(--accent);font-weight:600;">2.</span> Select <strong style="color:var(--text);">"Connections"</strong> only → click <strong style="color:var(--text);">"Request archive"</strong></div>
-      <div><span style="color:var(--accent);font-weight:600;">3.</span> LinkedIn emails you a download link within 10 minutes</div>
-      <div><span style="color:var(--accent);font-weight:600;">4.</span> Download and unzip → find <strong style="color:var(--text);">Connections.csv</strong></div>
-      <div><span style="color:var(--accent);font-weight:600;">5.</span> Upload it below ↓</div>
-    </div>
-  </div>
-
-  <!-- UPLOAD + FILTERS -->
-  <div style="background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:20px;">
-    <div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;">
-      <div style="flex:1;min-width:200px;">
-        <label style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);display:block;margin-bottom:8px;">Upload Connections.csv</label>
-        <input type="file" id="li-file" accept=".csv" style="margin:0;font-size:12px;" onchange="previewLinkedIn()"/>
-      </div>
-      <div style="flex:1;min-width:200px;">
-        <label style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);display:block;margin-bottom:8px;">Focus on portfolio company</label>
-        <select id="li-co" style="margin:0;width:100%;">
-          <option value="">All companies</option>
-          <option>Limy AI</option><option>Blings</option><option>Cytrix</option>
-          <option>VISITT</option><option>Sency AI</option><option>Shavit Group</option>
-          <option>Enabley</option><option>RePower</option>
-        </select>
-      </div>
-      <div style="flex:1;min-width:200px;">
-        <label style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);display:block;margin-bottom:8px;">Looking for</label>
-        <select id="li-goal" style="margin:0;width:100%;">
-          <option value="partner">Channel Partner</option>
-          <option value="client">Enterprise Client</option>
-          <option value="investor">Investor</option>
-          <option value="any">Any relevant match</option>
-        </select>
-      </div>
-    </div>
-    <div style="margin-top:14px;display:flex;gap:10px;align-items:center;">
-      <button class="btn btn-primary btn-sm" onclick="runLinkedInMatch()" id="li-run-btn" disabled>🤖 Find Best Matches</button>
-      <span id="li-status" style="font-size:12px;color:var(--muted);"></span>
-    </div>
-  </div>
-
-  <!-- RESULTS -->
-  <div id="li-results"></div>
-</div>
 
 <!-- BD INTELLIGENCE -->
 <div class="page" id="page-matching">
@@ -1204,15 +1153,10 @@ function previewLinkedIn(){
     liConnections=rows;
     const filtered=keywordFilter(rows);
     const msg=`${rows.length} connections loaded — ${filtered.length} pass keyword filter`;
-    // Enable both buttons (old hidden + active)
-    ['li-run-btn','li-run-btn-active'].forEach(id=>{
-      const btn=document.getElementById(id);
-      if(btn)btn.disabled=false;
-    });
-    ['li-status','li-status-active'].forEach(id=>{
-      const el=document.getElementById(id);
-      if(el)el.textContent=msg;
-    });
+    const btn=document.getElementById('li-run-btn-active');
+    const status=document.getElementById('li-status-active');
+    if(btn)btn.disabled=false;
+    if(status)status.textContent=msg;
   };
   reader.readAsText(file);
 }
