@@ -271,9 +271,7 @@ hr{border:none;border-top:1px solid var(--border);margin:16px 0;}
   <div class="nav-item" onclick="nav('clients')"><span>🤝</span> Clients</div>
   <div class="nav-item" onclick="nav('revenue')"><span>💰</span> My Revenue</div>
   <div class="nav-group">AI Tools</div>
-  <div class="nav-item" onclick="nav('matching')"><span>🎯</span> Matching</div>
-  <div class="nav-item" onclick="nav('leads')"><span>🔍</span> Lead Finder</div>
-  <div class="nav-item" onclick="nav('linkedin')"><span>🔗</span> LinkedIn Import</div>
+  <div class="nav-item" onclick="nav('matching')"><span>🎯</span> BD Intelligence</div>
   <div class="nav-item" onclick="nav('ai')"><span>💬</span> AI Assistant</div>
   <div class="sidebar-footer">
     Tailwind · Omer Sadiv
@@ -496,7 +494,7 @@ hr{border:none;border-top:1px solid var(--border);margin:16px 0;}
 </div>
 
 <!-- LINKEDIN IMPORT -->
-<div class="page" id="page-linkedin">
+<div class="page" id="page-linkedin-old" style="display:none">
   <div class="page-title">🔗 LinkedIn Smart Import</div>
   <div class="page-sub">Upload your LinkedIn connections and Claude finds the most relevant ones for your portfolio</div>
 
@@ -548,10 +546,26 @@ hr{border:none;border-top:1px solid var(--border);margin:16px 0;}
   <div id="li-results"></div>
 </div>
 
-<!-- MATCHING -->
+<!-- BD INTELLIGENCE -->
 <div class="page" id="page-matching">
-  <div class="page-title">🎯 Matching Engine</div>
-  <div class="page-sub">AI מוצא את ה-Partners הטובים ביותר לכל Company</div>
+  <div class="page-title">🎯 BD Intelligence</div>
+  <div class="page-sub">Matching · LinkedIn Import · Lead Finder — הכל במקום אחד</div>
+
+  <!-- TABS -->
+  <div style="display:flex;gap:4px;margin-bottom:20px;background:var(--surf);border-radius:10px;padding:4px;width:fit-content;">
+    <button id="bdt-match" onclick="switchBDTab('match')"
+      style="padding:8px 18px;border-radius:8px;border:none;cursor:pointer;font-size:12px;font-weight:600;
+        background:var(--accent);color:#fff;">🎯 Matching</button>
+    <button id="bdt-linkedin" onclick="switchBDTab('linkedin')"
+      style="padding:8px 18px;border-radius:8px;border:none;cursor:pointer;font-size:12px;font-weight:600;
+        background:transparent;color:var(--muted);">🔗 LinkedIn</button>
+    <button id="bdt-leads" onclick="switchBDTab('leads')"
+      style="padding:8px 18px;border-radius:8px;border:none;cursor:pointer;font-size:12px;font-weight:600;
+        background:transparent;color:var(--muted);">🔍 Lead Finder</button>
+  </div>
+
+  <!-- MATCHING TAB -->
+  <div id="bd-tab-match">
   <div class="card">
     <div class="form-row">
       <div class="field"><label>Company</label>
@@ -621,10 +635,92 @@ hr{border:none;border-top:1px solid var(--border);margin:16px 0;}
     <button class="btn btn-primary btn-sm" onclick="runMatching()">🎯 Run Matching</button>
   </div>
   <div id="match-out"></div>
+  </div><!-- end bd-tab-match -->
+
+  <!-- LINKEDIN TAB -->
+  <div id="bd-tab-linkedin" style="display:none;">
+    <div class="page-sub" style="margin-bottom:16px;">העלה קובץ LinkedIn CSV — AI מוצא את הכי רלוונטים לפורטפוליו שלך</div>  <div class="page-title">🔗 LinkedIn Smart Import</div>
+  <div class="page-sub">Upload your LinkedIn connections and Claude finds the most relevant ones for your portfolio</div>
+
+  <!-- HOW TO GET THE FILE -->
+  <div style="background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:20px;">
+    <div style="font-size:13px;font-weight:700;margin-bottom:12px;">📥 How to get your LinkedIn connections file:</div>
+    <div style="display:flex;flex-direction:column;gap:8px;font-size:12px;color:var(--muted);line-height:1.7;">
+      <div><span style="color:var(--accent);font-weight:600;">1.</span> Go to <a href="https://www.linkedin.com/mypreferences/d/download-my-data" target="_blank" style="color:var(--accent);">linkedin.com/mypreferences/d/download-my-data</a></div>
+      <div><span style="color:var(--accent);font-weight:600;">2.</span> Select <strong style="color:var(--text);">"Connections"</strong> only → click <strong style="color:var(--text);">"Request archive"</strong></div>
+      <div><span style="color:var(--accent);font-weight:600;">3.</span> LinkedIn emails you a download link within 10 minutes</div>
+      <div><span style="color:var(--accent);font-weight:600;">4.</span> Download and unzip → find <strong style="color:var(--text);">Connections.csv</strong></div>
+      <div><span style="color:var(--accent);font-weight:600;">5.</span> Upload it below ↓</div>
+    </div>
+  </div>
+
+  <!-- UPLOAD + FILTERS -->
+  <div style="background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:20px;">
+    <div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;">
+      <div style="flex:1;min-width:200px;">
+        <label style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);display:block;margin-bottom:8px;">Upload Connections.csv</label>
+        <input type="file" id="li-file" accept=".csv" style="margin:0;font-size:12px;" onchange="previewLinkedIn()"/>
+      </div>
+      <div style="flex:1;min-width:200px;">
+        <label style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);display:block;margin-bottom:8px;">Focus on portfolio company</label>
+        <select id="li-co" style="margin:0;width:100%;">
+          <option value="">All companies</option>
+          <option>Limy AI</option><option>Blings</option><option>Cytrix</option>
+          <option>VISITT</option><option>Sency AI</option><option>Shavit Group</option>
+          <option>Enabley</option><option>RePower</option>
+        </select>
+      </div>
+      <div style="flex:1;min-width:200px;">
+        <label style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);display:block;margin-bottom:8px;">Looking for</label>
+        <select id="li-goal" style="margin:0;width:100%;">
+          <option value="partner">Channel Partner</option>
+          <option value="client">Enterprise Client</option>
+          <option value="investor">Investor</option>
+          <option value="any">Any relevant match</option>
+        </select>
+      </div>
+    </div>
+    <div style="margin-top:14px;display:flex;gap:10px;align-items:center;">
+      <button class="btn btn-primary btn-sm" onclick="runLinkedInMatch()" id="li-run-btn" disabled>🤖 Find Best Matches</button>
+      <span id="li-status" style="font-size:12px;color:var(--muted);"></span>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="li-results"></div>
+  </div><!-- end bd-tab-linkedin -->
+
+  <!-- LEADS TAB -->
+  <div id="bd-tab-leads" style="display:none;">
+    <div class="page-sub" style="margin-bottom:16px;">הזדמנויות שטרם נוצלו ברשת שלך</div>
+    <div class="card">
+      <div class="form-row">
+        <div class="field"><label>Portfolio Company</label>
+          <select id="l-co" style="margin:0;">
+            <option value="">— Choose —</option>
+            <option>Limy AI</option><option>Blings</option><option>Cytrix</option>
+            <option>VISITT</option><option>Sency AI</option><option>Shavit Group</option>
+            <option>Jessica Energy</option><option>Enabley</option><option>RePower</option>
+          </select>
+        </div>
+        <div class="field"><label>Lead Type</label>
+          <select id="l-type" style="margin:0;">
+            <option value="partner">Channel Partner</option>
+            <option value="client">Enterprise Client</option>
+            <option value="investor">Investor</option>
+            <option value="any">Any</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="runLeads()">🔍 Find Opportunities</button>
+    </div>
+    <div id="lead-out"></div>
+  </div><!-- end bd-tab-leads -->
+
 </div>
 
-<!-- LEADS -->
-<div class="page" id="page-leads">
+<!-- LEADS (hidden) -->
+<div class="page" id="page-leads-old" style="display:none">
   <div class="page-title">🔍 Lead Finder</div>
   <div class="page-sub">מנתח את הרשת שלך ומוצא הזדמנויות שעדיין לא נוצלו</div>
   <div class="card">
@@ -2912,6 +3008,18 @@ Raw JSON only, no markdown.`,
     console.error(e);
   }
 }
+function switchBDTab(tab){
+  ['match','linkedin','leads'].forEach(t=>{
+    const el=document.getElementById('bd-tab-'+t);
+    const btn=document.getElementById('bdt-'+t);
+    if(el)el.style.display=t===tab?'block':'none';
+    if(btn){
+      btn.style.background=t===tab?'var(--accent)':'transparent';
+      btn.style.color=t===tab?'#fff':'var(--muted)';
+    }
+  });
+}
+
 function runLeads(){
   const co=document.getElementById('l-co').value;
   const type=document.getElementById('l-type').value;
