@@ -677,6 +677,36 @@ hr{border:none;border-top:1px solid var(--border);margin:16px 0;}
         </select>
       </div>
     </div>
+    <div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;margin-top:14px;">
+      <div style="flex:1;min-width:200px;">
+        <label style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);display:block;margin-bottom:8px;">Sector (optional)</label>
+        <select id="li-sector" style="margin:0;width:100%;">
+          <option value="">— All Sectors —</option>
+          <option>FMCG / CPG</option>
+          <option>Retail &amp; E-commerce</option>
+          <option>Pharma &amp; Healthcare</option>
+          <option>Media &amp; Entertainment</option>
+          <option>Financial Services</option>
+          <option>Real Estate / PropTech</option>
+          <option>Cybersecurity</option>
+          <option>FitTech / Wellness</option>
+          <option>Energy &amp; CleanTech</option>
+          <option>SaaS / Enterprise Tech</option>
+        </select>
+      </div>
+      <div style="flex:1;min-width:200px;">
+        <label style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);display:block;margin-bottom:8px;">Geography (optional)</label>
+        <select id="li-geo" style="margin:0;width:100%;">
+          <option value="">— All Regions —</option>
+          <option>Israel</option>
+          <option>LATAM</option>
+          <option>USA</option>
+          <option>Europe</option>
+          <option>Gulf / UAE</option>
+          <option>Global</option>
+        </select>
+      </div>
+    </div>
     <div style="margin-top:14px;display:flex;gap:10px;align-items:center;">
       <button class="btn btn-primary btn-sm" onclick="runLinkedInMatch()" id="li-run-btn" disabled>🤖 Find Best Matches</button>
       <span id="li-status" style="font-size:12px;color:var(--muted);"></span>
@@ -1216,6 +1246,8 @@ async function runLinkedInMatch(){
   const results=document.getElementById('li-results');
   const co=document.getElementById('li-co').value;
   const goal=document.getElementById('li-goal').value;
+  const sector=document.getElementById('li-sector')?.value||'';
+  const geo=document.getElementById('li-geo')?.value||'';
 
   if(!liConnections||!liConnections.length){
     results.innerHTML=`<div style="color:var(--red);padding:20px;text-align:center;">העלה קובץ LinkedIn CSV תחילה</div>`;
@@ -1234,6 +1266,9 @@ async function runLinkedInMatch(){
 
   const coData=COMPANIES.find(c=>c.name===co);
   const existing=PEOPLE.map(p=>p.name).join(', ');
+  const filters=[];
+  if(sector)filters.push(`Prioritize people from the ${sector} sector.`);
+  if(geo)filters.push(`Prioritize people with connections in ${geo}.`);
 
   try{
     const res=await fetch(WORKER_URL,{
@@ -1241,19 +1276,39 @@ async function runLinkedInMatch(){
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
         system:`You are a BD advisor for Tailwind (Omer Sadiv, Israeli BD firm, ex-Pernod Ricard).
-Company: ${co} — ${coData?.desc||coData?.category||''}
+Company: ${co||'all portfolio'} — ${coData?.desc||coData?.category||''}
 Goal: ${goal}
+${filters.join('\n')}
 Already in CRM: ${existing}
 From the LinkedIn connections below, find the TOP 10 most relevant people.
+${sector?`Focus on ${sector} sector.`:''}${geo?` Focus on ${geo} geography.`:''}
 Return ONLY JSON array:
 [{"name":"...","title":"...","company":"...","why":"2 sentences","action":"specific intro approach"}]
 Raw JSON only.`,
         messages:[{role:'user',content:`LinkedIn connections:\n${sample}`}]
       })
     });
-    const data=await res.json();
+    const rawText=await res.text();
+    if(!rawText||!rawText.trim()){
+      results.innerHTML=`<div style="color:var(--red);padding:20px;text-align:center;">Worker לא החזיר תשובה</div>`;
+      return;
+    }
+    let data;
+    try{data=JSON.parse(rawText);}catch(e){
+      results.innerHTML=`<div style="color:var(--red);padding:20px;">Raw:<br><pre style="font-size:10px;overflow:auto;white-space:pre-wrap;">${rawText.slice(0,400)}</pre></div>`;
+      return;
+    }
+    if(data.error){
+      results.innerHTML=`<div style="color:var(--red);padding:20px;">API Error: ${JSON.stringify(data.error)}</div>`;
+      return;
+    }
     const text=data.content?.map(i=>i.text||'').join('')||'';
-    const matches=JSON.parse(text.replace(/```json|```/g,'').trim());
+    let matches;
+    try{matches=JSON.parse(text.replace(/```json|```/g,'').trim());}
+    catch(e){
+      results.innerHTML=`<div style="color:var(--red);padding:20px;">Parse error:<br><pre style="font-size:10px;overflow:auto;white-space:pre-wrap;">${text.slice(0,400)}</pre></div>`;
+      return;
+    }
 
     results.innerHTML=`
       <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--accent);margin-bottom:14px;">
