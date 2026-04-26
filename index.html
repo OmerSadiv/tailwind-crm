@@ -271,7 +271,9 @@ hr{border:none;border-top:1px solid var(--border);margin:16px 0;}
   <div class="nav-item" onclick="nav('clients')"><span>🤝</span> Clients</div>
   <div class="nav-item" onclick="nav('revenue')"><span>💰</span> My Revenue</div>
   <div class="nav-group">AI Tools</div>
-  <div class="nav-item" onclick="nav('linkedin')"><span>🎯</span> Smart Leads</div>
+  <div class="nav-item" onclick="nav('matching')"><span>🎯</span> Matching</div>
+  <div class="nav-item" onclick="nav('leads')"><span>🔍</span> Lead Finder</div>
+  <div class="nav-item" onclick="nav('linkedin')"><span>🔗</span> LinkedIn Import</div>
   <div class="nav-item" onclick="nav('ai')"><span>💬</span> AI Assistant</div>
   <div class="sidebar-footer">
     Tailwind · Omer Sadiv
@@ -438,7 +440,7 @@ hr{border:none;border-top:1px solid var(--border);margin:16px 0;}
       <div class="pill" onclick="setPF('partner',this)">Partners</div>
       <div class="pill" onclick="setPF('referrer',this)">Referrers</div>
       <div class="pill" onclick="setPF('contact',this)">Contacts</div>
-
+      <div class="pill" onclick="setPF('client',this)">Clients</div>
     </div>
     <button class="btn btn-primary btn-sm" onclick="openAddPerson()">+ Add</button>
   </div>
@@ -495,13 +497,8 @@ hr{border:none;border-top:1px solid var(--border);margin:16px 0;}
 
 <!-- LINKEDIN IMPORT -->
 <div class="page" id="page-linkedin">
-  <div class="page-title">🎯 Smart Leads</div>
-  <div class="page-sub">מצא לידים חדשים מ-LinkedIn או מהרשת הקיימת שלך</div>
-  <div style="display:flex;gap:8px;margin-bottom:20px;">
-    <button id="tab-li-btn" onclick="switchLeadTab('li')" style="padding:8px 18px;border-radius:8px;border:1px solid var(--accent);background:var(--accent);color:white;cursor:pointer;font-size:13px;font-weight:600;">🔗 LinkedIn</button>
-    <button id="tab-crm-btn" onclick="switchLeadTab('crm')" style="padding:8px 18px;border-radius:8px;border:1px solid var(--border);background:var(--surf);color:var(--muted);cursor:pointer;font-size:13px;">👥 רשת CRM</button>
-  </div>
-  <div id="tab-li-content">
+  <div class="page-title">🔗 LinkedIn Smart Import</div>
+  <div class="page-sub">Upload your LinkedIn connections and Claude finds the most relevant ones for your portfolio</div>
 
   <!-- HOW TO GET THE FILE -->
   <div style="background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:20px;">
@@ -531,23 +528,11 @@ hr{border:none;border-top:1px solid var(--border);margin:16px 0;}
           <option>Enabley</option><option>RePower</option>
         </select>
       </div>
-      <div style="flex:1;min-width:160px;">
-        <label style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);display:block;margin-bottom:8px;">Territory</label>
-        <select id="li-territory" style="margin:0;width:100%;">
-          <option value="">🌐 כל העולם</option>
-          <option value="Israel">🇮🇱 ישראל</option>
-          <option value="United States">🇺🇸 USA</option>
-          <option value="Europe">🇪🇺 אירופה</option>
-          <option value="LATAM">🌎 לאטאם</option>
-          <option value="Middle East">🌍 Middle East</option>
-        </select>
-      </div>
-      <div style="flex:1;min-width:160px;">
+      <div style="flex:1;min-width:200px;">
         <label style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);display:block;margin-bottom:8px;">Looking for</label>
         <select id="li-goal" style="margin:0;width:100%;">
           <option value="partner">Channel Partner</option>
           <option value="client">Enterprise Client</option>
-          <option value="smb">SMB Client</option>
           <option value="investor">Investor</option>
           <option value="any">Any relevant match</option>
         </select>
@@ -561,27 +546,77 @@ hr{border:none;border-top:1px solid var(--border);margin:16px 0;}
 
   <!-- RESULTS -->
   <div id="li-results"></div>
-  </div>
-  <div id="tab-crm-content" style="display:none;">
-    <div class="card" style="margin-bottom:16px;">
-      <div class="form-row">
-        <div class="field"><label>Portfolio Company</label><select id="crm-co" style="margin:0;"><option value="">— בחר —</option><option>Limy AI</option><option>Blings</option><option>Cytrix</option><option>VISITT</option><option>Sency AI</option><option>Shavit Group</option><option>Jessica Energy</option><option>Enabley</option><option>RePower</option></select></div>
-        <div class="field"><label>מחפש</label><select id="crm-goal" style="margin:0;"><option value="partner">Channel Partner</option><option value="client">Enterprise Client</option><option value="smb">SMB Client</option><option value="investor">Investor</option></select></div>
-      </div>
-      <button class="btn btn-primary btn-sm" onclick="runCRMLeads()">🎯 Find in Network</button>
-    </div>
-    <div id="crm-lead-out"></div>
-  </div>
 </div>
 
 <!-- MATCHING -->
 <div class="page" id="page-matching">
-  <div class="page-title">Matching Engine</div>
-  <div class="page-sub">AI מוצא את הPartners הטובים ביותר לכל Company</div>
+  <div class="page-title">🎯 Matching Engine</div>
+  <div class="page-sub">AI מוצא את ה-Partners הטובים ביותר לכל Company</div>
   <div class="card">
     <div class="form-row">
-      <div class="field"><label>Company</label><select id="m-co"><option value="">— Choose —</option><option>Limy AI</option><option>Blings</option><option>Cytrix</option><option>VISITT</option><option>Sency AI</option><option>Shavit Group</option><option>Jessica Energy</option><option>Enabley</option><option>RePower</option></select></div>
-      <div class="field"><label>Goal</label><select id="m-goal"><option value="">— Goal —</option><option>Channel Partner</option><option>Enterprise Client</option><option>Investor</option><option>Market Entry — LATAM</option><option>Market Entry — USA</option><option>Market Entry — Europe</option><option>Strategic Partnership</option></select></div>
+      <div class="field"><label>Company</label>
+        <select id="m-co" style="margin:0;">
+          <option value="">— Choose —</option>
+          <option>Limy AI</option><option>Blings</option><option>Cytrix</option>
+          <option>VISITT</option><option>Sency AI</option><option>Shavit Group</option>
+          <option>Jessica Energy</option><option>Enabley</option><option>RePower</option>
+        </select>
+      </div>
+      <div class="field"><label>Goal</label>
+        <select id="m-goal" style="margin:0;">
+          <option value="">— Goal —</option>
+          <option>Channel Partner</option>
+          <option>Enterprise Client</option>
+          <option>Investor</option>
+          <option>Market Entry — LATAM</option>
+          <option>Market Entry — USA</option>
+          <option>Market Entry — Europe</option>
+          <option>Strategic Partnership</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="field"><label>Sector (optional)</label>
+        <select id="m-sector" style="margin:0;">
+          <option value="">— All Sectors —</option>
+          <optgroup label="Enterprise / B2B">
+            <option>Retail &amp; E-commerce</option>
+            <option>FMCG / Consumer Goods</option>
+            <option>Pharma &amp; Healthcare</option>
+            <option>Financial Services / Banking</option>
+            <option>Media &amp; Entertainment</option>
+            <option>Telecom</option>
+            <option>Real Estate / PropTech</option>
+            <option>Energy &amp; CleanTech</option>
+            <option>Agriculture / AgriTech</option>
+            <option>Defense &amp; Security</option>
+          </optgroup>
+          <optgroup label="Tech">
+            <option>SaaS / Software</option>
+            <option>Cyber &amp; Security</option>
+            <option>AI &amp; Data</option>
+            <option>Fintech</option>
+            <option>EdTech</option>
+            <option>FitTech / HealthTech</option>
+          </optgroup>
+          <optgroup label="By Size">
+            <option>Enterprise (Fortune 500)</option>
+            <option>Mid-Market</option>
+            <option>Startup / Scale-up</option>
+          </optgroup>
+        </select>
+      </div>
+      <div class="field"><label>Geography (optional)</label>
+        <select id="m-geo" style="margin:0;">
+          <option value="">— All Regions —</option>
+          <option>Israel</option>
+          <option>LATAM</option>
+          <option>USA</option>
+          <option>Europe</option>
+          <option>Gulf / UAE</option>
+          <option>Global</option>
+        </select>
+      </div>
     </div>
     <button class="btn btn-primary btn-sm" onclick="runMatching()">🎯 Run Matching</button>
   </div>
@@ -606,7 +641,6 @@ hr{border:none;border-top:1px solid var(--border);margin:16px 0;}
         <select id="l-type" style="margin:0;">
           <option value="partner">Channel Partner</option>
           <option value="client">Enterprise Client</option>
-          <option value="smb">SMB Client</option>
           <option value="investor">Investor</option>
           <option value="any">Any</option>
         </select>
@@ -626,29 +660,16 @@ hr{border:none;border-top:1px solid var(--border);margin:16px 0;}
 </main>
 
 <!-- FLOATING AI ASSISTANT -->
-<div id="float-chat-window" style="display:none;position:fixed;bottom:90px;right:24px;width:360px;height:380px;
-  background:#1a1a2e;border:1px solid var(--border);border-radius:16px;
-  box-shadow:0 8px 32px rgba(0,0,0,0.4);z-index:999;flex-direction:column;overflow:hidden;">
-  <div style="padding:14px 16px;border-bottom:1px solid var(--border);font-weight:600;font-size:14px;display:flex;justify-content:space-between;align-items:center;">
-    <span>🤖 AI Assistant</span>
-    <button onclick="toggleFloatChat()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;">×</button>
-  </div>
-  <div id="float-messages" style="flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px;"></div>
-  <div style="padding:10px;border-top:1px solid var(--border);display:flex;gap:8px;">
-    <input id="float-input" placeholder="שאל משהו על ה-CRM..." onkeydown="if(event.key==='Enter')sendFloatChat()"
-      style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-size:13px;outline:none;"/>
-    <button onclick="sendFloatChat()"
-      style="background:var(--accent);border:none;border-radius:8px;padding:8px 14px;color:white;cursor:pointer;font-size:13px;">שלח</button>
-  </div>
-</div>
+<!-- Claude Button — opens this conversation -->
 <div style="position:fixed;bottom:24px;right:24px;z-index:1000;">
-  <button id="float-btn" onclick="toggleFloatChat()"
+  <a href="https://claude.ai" target="_blank"
     style="width:52px;height:52px;border-radius:50%;background:var(--accent);
       box-shadow:0 4px 16px rgba(124,111,255,0.5);font-size:22px;
       display:flex;align-items:center;justify-content:center;
-      border:none;cursor:pointer;transition:transform 0.2s;color:white;"
+      text-decoration:none;transition:transform 0.2s;"
+    title="Open Claude to make changes"
     onmouseover="this.style.transform='scale(1.1)'"
-    onmouseout="this.style.transform='scale(1)'">💬</button>
+    onmouseout="this.style.transform='scale(1)'">💬</a>
 </div>
 <script>
 // ============================================================
@@ -727,16 +748,7 @@ const CLIENTS_DEFAULTS=[
 let nextId=22;
 let nextClientId=100;
 let pFilter='all';
-const SK='tailwind_v5';
-// Auto-seed: load backup if no data exists
-(function(){
-  try{
-    if(!localStorage.getItem('tailwind_v5')){
-      const seed = {"people": [{"id": 0, "name": "Omer Sadiv", "type": "partner", "role": "Founder & BD Lead", "company": "Tailwind", "geo": "Israel", "companies": ["Limy AI", "Blings", "Cytrix", "VISITT", "Sency AI", "Shavit Group", "Enabley", "RePower"], "strength": 5, "status": "prospects", "parentId": null, "dualRole": null, "companyStatus": {"Limy AI": "prospects", "Blings": "prospects", "Cytrix": "prospects", "VISITT": "prospects", "Sency AI": "prospects", "Enabley": "prospects", "RePower": "prospects"}, "clientsByCompany": {}, "potentialsByCompany": {}, "clientData": {}, "commissions": {}, "notes": "Tailwind founder. Manages all portfolio relationships. Ex-Pernod Ricard."}, {"id": 1, "name": "Patrick", "type": "partner", "role": "LATAM Distributor", "company": "Independent", "geo": "Brazil", "companies": ["Blings", "Enabley", "Limy AI"], "strength": 5, "status": "prospects", "parentId": null, "companyStatus": {"Blings": "signed", "Enabley": "prospects", "Limy AI": "prospects"}, "clientsByCompany": {}, "commissions": {"Blings": {"1": 20}, "Enabley": {"1": 20}}, "notes": "Key Brazil distributor. First to validate LATAM model.", "clientData": {}, "potentialsByCompany": {}, "dualRole": null}, {"id": 2, "name": "Doron", "type": "referrer", "role": "Connector / Referrer", "company": "Independent", "geo": "Israel", "companies": ["Limy AI", "Cytrix"], "strength": 4, "status": "signed", "parentId": null, "companyStatus": {"Limy AI": "signed", "Cytrix": "signed"}, "clientsByCompany": {}, "commissions": {"Limy AI": {"2": 15}, "Cytrix": {"2": 12.5}}, "notes": "\u05d7\u05d9\u05d1\u05e8 \u05d0\u05ea Tailwind \u05dc-Limy AI \u05d5\u05dc-Cytrix. \u05de\u05ea\u05d7\u05dc\u05e7 with \u05e2\u05d5\u05de\u05e8 \u05d7\u05e6\u05d9-\u05d7\u05e6\u05d9: Limy \u2014 15% \u05db\u05dc \u05d0\u05d7\u05d3 \u05de\u05ea\u05d5\u05da 30%, Cytrix \u2014 12.5% \u05db\u05dc \u05d0\u05d7\u05d3 \u05de\u05ea\u05d5\u05da 25%.", "clientData": {}, "potentialsByCompany": {}, "dualRole": null}, {"id": 3, "name": "Rafa Calderon", "type": "partner", "role": "CEO, Driftwood Capital", "company": "Driftwood Capital", "geo": "LATAM", "companies": ["Enabley", "Blings"], "strength": 4, "status": "initial", "parentId": null, "dualRole": "client", "dualRoleNote": "CEO of Driftwood Capital \u2014 also a potential client", "companyStatus": {}, "clientsByCompany": {}, "commissions": {}, "notes": "Partner Prospect \u05e9\u05d2\u05d5\u05d9\u05e1 \u05d9\u05e9\u05d9\u05e8\u05d5\u05ea on \u05d9\u05d3\u05d9 \u05e2\u05d5\u05de\u05e8. \u05d2\u05dd Client Prospect \u05db\u05de\u05e0\u05db\"\u05dc Driftwood Capital. Deep LATAM enterprise connections.", "clientData": {}, "potentialsByCompany": {}}, {"id": 4, "name": "Eden Hai", "type": "contact", "role": "Accelerator Director", "company": "Eden Accelerator", "geo": "Israel", "companies": ["Limy AI", "Sency AI"], "strength": 3, "status": "initial", "parentId": null, "companyStatus": {}, "clientsByCompany": {}, "commissions": {}, "notes": "Runs accelerator program. Relevant for Limy and Sency introductions.", "clientData": {}, "potentialsByCompany": {}, "dualRole": null}, {"id": 5, "name": "Michael Houston", "type": "partner", "role": "Investor", "company": "Independent", "geo": "USA", "companies": ["Sency AI", "Limy AI"], "strength": 4, "status": "followup", "parentId": null, "companyStatus": {}, "clientsByCompany": {}, "commissions": {}, "notes": "Actively evaluating Sency AI. Enterprise network relevant for Limy AI.", "clientData": {}, "potentialsByCompany": {}, "dualRole": null}, {"id": 6, "name": "Dana", "type": "contact", "role": "Head of Marketing", "company": "Bank Leumi", "geo": "Israel", "companies": ["Limy AI"], "strength": 3, "status": "initial", "parentId": null, "companyStatus": {}, "clientsByCompany": {}, "commissions": {}, "notes": "Enterprise marketing buyer at major Israeli bank.", "clientData": {}, "potentialsByCompany": {}, "dualRole": null}, {"id": 7, "name": "Omri", "type": "partner", "role": "BD Director", "company": "Commbox", "geo": "Israel", "companies": ["Limy AI"], "strength": 3, "status": "followup", "parentId": null, "companyStatus": {"Limy AI": "followup"}, "clientsByCompany": {}, "commissions": {}, "notes": "Commbox enterprise messaging base. Evaluating Limy AI channel partnership.", "clientData": {}, "potentialsByCompany": {}, "dualRole": null}, {"id": 8, "name": "Dr. Weiss", "type": "contact", "role": "Professor", "company": "University of Miami", "geo": "USA", "companies": ["Blings"], "strength": 3, "status": "initial", "parentId": null, "companyStatus": {}, "clientsByCompany": {}, "commissions": {}, "notes": "\u05d0\u05d9\u05e9 Strength \u05e9\u05d7\u05d9\u05d1\u05e8 \u05dc-University of Miami \u05d5\u05e2\u05d5\u05d1\u05d3 Name. University of Miami \u05d4\u05dd \u05d4Client.", "clientData": {}, "potentialsByCompany": {}, "dualRole": null}, {"id": 9, "name": "Atar Family", "type": "partner", "role": "Agriculture & Energy", "company": "Atar Group", "geo": "Israel", "companies": ["Jessica Energy"], "strength": 4, "status": "prospects", "parentId": null, "companyStatus": {"Jessica Energy": "signed"}, "clientsByCompany": {}, "potentialsByCompany": {}, "commissions": {"Jessica Energy": {"9": 20}}, "notes": "Agriculture and energy connections. Key for Jessica Energy agri-PV adoption.", "clientData": {}, "dualRole": null}, {"id": 10, "name": "Roberto", "type": "partner", "role": "US Real Estate Executive", "company": "US Real Estate", "geo": "USA", "companies": ["VISITT"], "strength": 4, "status": "followup", "parentId": null, "companyStatus": {"VISITT": "followup"}, "clientsByCompany": {}, "commissions": {}, "notes": "Strong US real estate network. Evaluating VISITT for building management.", "clientData": {}, "potentialsByCompany": {}, "dualRole": null}, {"id": 11, "name": "\u05ea\u05d5\u05de\u05e8 \u05e9\u05e7\u05e8\u05d5\u05d1", "type": "partner", "role": "Director of Managed Security", "company": "Konfidas", "geo": "Israel", "companies": ["Cytrix"], "strength": 3, "status": "followup", "parentId": null, "companyStatus": {"Cytrix": "followup"}, "clientsByCompany": {}, "commissions": {}, "notes": "Partner Prospect \u05dc\u05e1\u05d9\u05d9\u05d8\u05e8\u05d9\u05e7\u05e1. \u05dc\u05e4\u05e0\u05d9 \u05d7\u05ea\u05d9\u05de\u05ea \u05d4\u05e1\u05db\u05dd. Konfidas \u2014 \u05d7\u05d1\u05e8\u05ea \u05e1\u05d9\u05d9\u05d1\u05e8 \u05d9\u05e9\u05e8\u05d0\u05dc\u05d9\u05ea with Clients \u05d0\u05e8\u05d2\u05d5\u05e0\u05d9\u05d9\u05dd.", "clientData": {}, "potentialsByCompany": {}, "dualRole": null}, {"id": 20, "name": "Eitam Argaman", "type": "contact", "role": "CMO & Co-Founder", "company": "RePower", "geo": "Israel", "companies": ["RePower"], "strength": 4, "status": "initial", "parentId": null, "companyStatus": {}, "clientsByCompany": {}, "commissions": {}, "notes": "\u05d0\u05d9\u05e9 \u05d4Strength \u05d4\u05d9\u05e9\u05d9\u05e8 \u05d1-RePower. \u05d0\u05d7\u05d3 \u05d4\u05de\u05d9\u05d9\u05e1\u05d3\u05d9\u05dd. RePower \u2014 \u05e1\u05e0\u05e1\u05d5\u05e8 NIR \u05dc\u05d1\u05d9\u05d5\u05d2\u05d6.", "clientData": {}, "potentialsByCompany": {}, "dualRole": null}, {"id": 21, "name": "Rafael Uston", "type": "partner", "role": "Partner", "company": "Independent", "geo": "USA", "companies": ["Blings"], "strength": 4, "status": "signed", "parentId": null, "dualRole": null, "companyStatus": {"Blings": "signed"}, "clientsByCompany": {}, "potentialsByCompany": {}, "clientData": {}, "commissions": {}, "notes": "Partner on Blings. Lead partner on Miami University deal \u2014 $15K/mo. Omer 5% co-partner."}, {"id": 22, "name": "Ehud Portiansky", "type": "contact", "role": "Investor", "company": "WeSki", "geo": "", "email": "", "companies": ["Limy AI"], "strength": 3, "status": "initial", "parentId": null, "dualRole": null, "companyStatus": {}, "clientsByCompany": {}, "potentialsByCompany": {}, "clientData": {}, "commissions": {}, "notes": "Added via client: WeSki"}, {"id": 23, "name": "Karin Herzka", "type": "contact", "role": "CMO", "company": "Leumit Healthcare", "geo": "", "email": "kherzka@leumit.co.il", "companies": ["Limy AI"], "strength": 3, "status": "initial", "parentId": null, "dualRole": null, "companyStatus": {}, "clientsByCompany": {}, "potentialsByCompany": {}, "clientData": {}, "commissions": {}, "notes": "Added via client: Leumit Healthcare"}], "clients": [{"id": 203, "name": "Miami University", "portfolioCo": "Blings", "sector": "Education", "stage": "contract", "payment": 15000, "partnerIds": [{"pid": "rafael", "pct": 95}, {"pid": "omer", "pct": 5}], "contacts": [{"name": "Dr. Weiss", "role": "Professor", "email": ""}], "notes": "Rafael Uston lead (95%) \u2014 Omer co-partner (5%). $15K/mo"}, {"id": 200, "name": "Comboxx", "portfolioCo": "Limy AI", "sector": "B2B SaaS / Communications", "stage": "proposal", "payment": 1000, "partnerIds": [{"pid": "omer", "pct": 10}, {"pid": "doron", "pct": 10}], "contacts": [{"name": "Michal Raz", "role": "SVP Growth & Partners", "email": "michal.r@commbox.io"}, {"name": "Omri", "role": "BD Director", "email": ""}], "notes": "In discussions with Omer for Limy AI"}, {"id": 201, "name": "Driftwood Capital", "portfolioCo": "Blings", "sector": "Investment", "stage": "followup", "payment": 0, "partnerIds": [{"pid": "omer", "pct": 50}, {"pid": "rafa", "pct": 50}], "contacts": [{"name": "Rafa Calderon", "role": "CEO", "email": ""}], "notes": "Rafa Calderon \u2014 dual role partner & client"}, {"id": 202, "name": "Proxima", "portfolioCo": "Cytrix", "sector": "Cyber", "stage": "email_sent", "payment": 0, "partnerIds": [{"pid": "omer", "pct": 100}], "contacts": [], "notes": "Prospect via Omer"}, {"id": 204, "name": "Grupo Globo (Brazil)", "portfolioCo": "Blings", "sector": "Media", "stage": "followup", "payment": 0, "partnerIds": [{"pid": "patrick", "pct": 100}], "contacts": [], "notes": "Patrick LATAM pipeline"}, {"id": 205, "name": "Claro Brasil", "portfolioCo": "Blings", "sector": "Telecom", "stage": "proposal", "payment": 0, "partnerIds": [{"pid": "patrick", "pct": 100}], "contacts": [], "notes": "Patrick LATAM pipeline"}, {"id": 206, "name": "Banco Ita\u00fa", "portfolioCo": "Enabley", "sector": "Finance", "stage": "followup", "payment": 0, "partnerIds": [{"pid": "patrick", "pct": 100}], "contacts": [], "notes": "Patrick LATAM pipeline"}, {"id": 207, "name": "Bradesco", "portfolioCo": "Enabley", "sector": "Finance", "stage": "intro_meeting", "payment": 0, "partnerIds": [{"pid": "patrick", "pct": 100}], "contacts": [], "notes": "Patrick LATAM pipeline"}, {"id": 210, "name": "\u05e9\u05d0\u05d5\u05dc\u05d9\u05d0\u05df \u05e1\u05d7\u05e8", "portfolioCo": "Limy AI", "sector": "Consumer Electronics / Retail", "stage": "proposal", "payment": 1000, "partnerIds": [{"pid": "omer", "pct": 10}, {"pid": "doron", "pct": 10}], "contacts": [], "notes": "\u05d7\u05d1\u05e8\u05ea \u05de\u05d5\u05e6\u05e8\u05d9 \u05d7\u05e9\u05de\u05dc \u2014 \u05de\u05e9\u05d5\u05d5\u05e7\u05d9\u05dd 6-8 \u05de\u05d5\u05ea\u05d2\u05d9\u05dd \u05d1\u05d0\u05e8\u05e5. \u05e4\u05d2\u05d9\u05e9\u05d4 \u05e8\u05d0\u05e9\u05d5\u05e0\u05d4 \u05d4\u05d9\u05d5\u05dd."}, {"id": 211, "name": "Food Appeal", "portfolioCo": "Limy AI", "sector": "Kitchen / DTC", "stage": "proposal", "payment": 1200, "partnerIds": [{"pid": "omer", "pct": 12.5}, {"pid": "doron", "pct": 12.5}], "contacts": [], "notes": "\u05d4\u05de\u05d7\u05d9\u05e8 \u05d9\u05e2\u05dc\u05d4 \u05d1\u05d7\u05d5\u05d3\u05e9 \u05d9\u05d5\u05dc\u05d9 +- \u05e2\u05dd \u05e2\u05dc\u05d9\u05d9\u05ea \u05d4\u05d0\u05ea\u05e8 \u05d4\u05d7\u05d3\u05e9 \u05e9\u05dc \u05d4\u05d7\u05d1\u05e8\u05d4 "}, {"id": 100, "name": "Avid", "portfolioCo": "Limy AI", "sector": "", "stage": "followup", "payment": 0, "partnerIds": [], "contacts": [{"name": "Chen Blatman", "role": "SVP E-commerce", "email": "chen.blatman@avid.com"}], "notes": "Chen referred us to Zury, who managed the SEO and exploring solution in AI ", "createdAt": 1776721103058}, {"id": 101, "name": "Driftwood Capital", "portfolioCo": "Limy AI", "sector": "hotels", "stage": "followup", "payment": 0, "partnerIds": [], "contacts": [{"name": "Rafa Calderon", "role": "CEO, Driftwood Capital", "email": ""}], "notes": "", "createdAt": 1776721162830}, {"id": 102, "name": "WeSki", "portfolioCo": "Limy AI", "sector": "Tourism", "stage": "email_sent", "payment": 0, "partnerIds": [], "contacts": [{"name": "Ehud Portiansky", "role": "Investor", "email": ""}], "notes": "Ehud Portiansky as an investor", "createdAt": 1776940061086}, {"id": 103, "name": "Leumit Healthcare", "portfolioCo": "Limy AI", "sector": "Healthcare", "stage": "email_sent", "payment": 0, "partnerIds": [], "contacts": [{"name": "Karin Herzka", "role": "CMO", "email": "kherzka@leumit.co.il"}], "notes": "", "createdAt": 1776942917192}], "companies": [{"id": "limy", "name": "Limy AI", "category": "Agentic Web / AI Visibility", "color": "#7c6fff", "website": "https://limy.ai", "desc": "CDN-level infrastructure \u2014 identifies every AI agent interaction and connects prompts to revenue.", "raised": "$10M Seed (Jan 2026)", "investors": "Flybridge + a16z speedrun", "clients": "AstraZeneca, Samsung, L'Or\u00e9al, Amazon Prime Video, KIA, P&G", "geo": ["Global", "USA", "Europe"], "commissionPct": 30}, {"id": "blings", "name": "Blings", "category": "Interactive Personalized Video", "color": "#00e5b0", "website": "https://blings.io", "desc": "AI-powered interactive personalized video for enterprise at scale.", "raised": "\u2014", "investors": "\u2014", "clients": "Enterprise", "geo": ["USA", "Israel", "LATAM"], "commissionPct": 25}, {"id": "cytrix", "name": "Cytrix", "category": "Agentic Cyber Pentesting", "color": "#ff6b6b", "website": "https://cytrix.ai", "desc": "Automated agentic cybersecurity pentesting. Continuous security validation.", "raised": "\u2014", "investors": "\u2014", "clients": "Israel Discount Bank, Cellebrite, eToro", "geo": ["Israel", "USA", "Europe"], "commissionPct": 25}, {"id": "visitt", "name": "VISITT", "category": "PropTech", "color": "#ffd166", "website": "https://visitt.io", "desc": "Property tech for building operations and tenant experience.", "raised": "\u2014", "investors": "\u2014", "clients": "Real estate operators", "geo": ["USA", "Israel"], "commissionPct": 20}, {"id": "sency", "name": "Sency AI", "category": "Fitness Tech / AI", "color": "#64b4ff", "website": "https://sency.ai", "desc": "AI-powered fitness and movement analysis using computer vision.", "raised": "\u2014", "investors": "\u2014", "clients": "Fitness platforms", "geo": ["USA", "Israel"], "commissionPct": 20}, {"id": "shavit", "name": "Shavit Group", "category": "Cyber / OSINT", "color": "#ff9999", "website": "https://shavit-group.com", "desc": "Cyber intelligence and OSINT solutions.", "raised": "\u2014", "investors": "\u2014", "clients": "Government, enterprise", "geo": ["Israel", "Gulf"], "commissionPct": 20}, {"id": "solar", "name": "Jessica Energy", "category": "AgriTech / CleanTech", "color": "#ffd166", "website": "", "desc": "Moving solar panels enabling agri-PV \u2014 dual land use for energy and crops.", "raised": "\u2014", "investors": "\u2014", "clients": "Agriculture sector", "geo": ["Israel", "Europe"], "commissionPct": 20}, {"id": "enabley", "name": "Enabley", "category": "LMS / KMS \u00b7 Deskless Workforce", "color": "#00e5b0", "website": "https://enabley.io", "desc": "Learning & Knowledge Management for deskless workers. Strong LATAM presence.", "raised": "\u2014", "investors": "\u2014", "clients": "Enterprise, LATAM", "geo": ["LATAM", "Israel", "USA"], "commissionPct": 25}, {"id": "repower", "name": "RePower", "category": "Industrial IoT / CleanTech", "color": "#a8ff78", "website": "https://repower.bio", "desc": "Industrial NIR sensor for biogas plants \u2014 real-time feedstock analysis. Phase 1: North America (hardware), Phase 2: Europe (HaaS).", "raised": "JNF Grant, PAPAYA Grant", "investors": "\u2014", "clients": "Biogas plants \u2014 North America & Europe", "geo": ["USA", "Europe", "Israel"], "commissionPct": 20}], "nextId": 24, "nextClientId": 104, "deletedClientIds": [209, 208], "deletedClientNames": ["israeli agri ministry", "kibbutz galuyot network"], "backedUpAt": "2026-04-25T13:40:32.961Z"};
-      localStorage.setItem('tailwind_v5', JSON.stringify(seed));
-    }
-  }catch(e){}
-})();
+const SK='tailwind_v4';
 const WORKER_URL='https://bold-sky-bf7a.omersadiv.workers.dev';
 const GDRIVE_CLIENT_ID='578804457261-itfn1dkp0ap51mdeootq0qq576ng59us.apps.googleusercontent.com';
 const GDRIVE_SCOPE='https://www.googleapis.com/auth/drive.file';
@@ -1111,7 +1123,6 @@ async function runLinkedInMatch(){
   const results=document.getElementById('li-results');
   const co=document.getElementById('li-co').value;
   const goal=document.getElementById('li-goal').value;
-  const territory=document.getElementById('li-territory')&&document.getElementById('li-territory').value||'';
 
   if(!liConnections||!liConnections.length){
     results.innerHTML=`<div style="color:var(--red);padding:20px;text-align:center;">העלה קובץ LinkedIn CSV תחילה</div>`;
@@ -1121,25 +1132,7 @@ async function runLinkedInMatch(){
   results.innerHTML=`<div style="text-align:center;padding:40px;color:var(--muted);"><div class="spinner" style="margin:0 auto 12px;"></div>מנתח ${liConnections.length} קשרים…</div>`;
 
   // Prepare connections summary (limit to 200)
-  // Filter by territory if selected — fallback to all if too few results
-  var filtered=liConnections;
-  if(territory){
-    var byTerritory=liConnections.filter(function(r){
-      const loc=(r['Location']||r['location']||r['Country']||r['country']||'').toLowerCase();
-      const t=territory.toLowerCase();
-      if(t==='europe'){return ['uk','germany','france','spain','italy','netherlands','sweden','norway','denmark','finland','switzerland','austria','belgium','portugal','poland'].some(function(c){return loc.includes(c);});}
-      if(t==='latam'){return ['brazil','mexico','colombia','argentina','chile','peru','venezuela','ecuador','bolivia','uruguay','paraguay','costa rica','panama','guatemala'].some(function(c){return loc.includes(c);});}
-      if(t==='middle east'){return ['uae','dubai','israel','saudi','qatar','bahrain','kuwait','oman','jordan','egypt','lebanon'].some(function(c){return loc.includes(c);});}
-      return loc.includes(t.toLowerCase());
-    });
-    filtered=byTerritory.length>=30?byTerritory:liConnections;
-    if(byTerritory.length<30){
-      results.innerHTML+='<div style="font-size:11px;color:var(--yellow);margin-bottom:8px;">⚠️ פחות מ-30 קשרים עם Location מוגדר ל-'+territory+' — מציג כל הקשרים</div>';
-    }
-  }
-  const pool=filtered;
-
-  const sample=pool.slice(0,200).map(r=>{
+  const sample=liConnections.slice(0,200).map(r=>{
     const name=`${r['First Name']||r['first name']||''} ${r['Last Name']||r['last name']||''}`.trim();
     const title=r['Position']||r['position']||r['Title']||r['title']||'';
     const company=r['Company']||r['company']||'';
@@ -1154,128 +1147,40 @@ async function runLinkedInMatch(){
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
-        model:'claude-haiku-4-5-20251001',
-        max_tokens:1500,
-        system:'Return ONLY a JSON array. No other text. Each item has: name, title, company, why, action.',
-        messages:[{role:'user',content:'Tailwind BD. Company: '+co+'. Goal: '+goal+(territory?' Territory: '+territory:'')+'. Top 10 matches. JSON array only.\n'+sample}]
+        system:`You are a BD advisor for Tailwind (Omer Sadiv, Israeli BD firm, ex-Pernod Ricard).
+Company: ${co} — ${coData?.desc||coData?.category||''}
+Goal: ${goal}
+Already in CRM: ${existing}
+From the LinkedIn connections below, find the TOP 10 most relevant people.
+Return ONLY JSON array:
+[{"name":"...","title":"...","company":"...","why":"2 sentences","action":"specific intro approach"}]
+Raw JSON only.`,
+        messages:[{role:'user',content:`LinkedIn connections:\n${sample}`}]
       })
     });
     const data=await res.json();
     const text=data.content?.map(i=>i.text||'').join('')||'';
-    let matches=[];
-    try{
-      const clean=text.replace(/```json|```/g,'').trim();
-      const s=clean.indexOf('['),e=clean.lastIndexOf(']');
-      if(s!==-1&&e!==-1)matches=JSON.parse(clean.slice(s,e+1));
-    }catch(err){
-      results.innerHTML='<div style="color:var(--red);padding:20px;">שגיאת עיבוד — נסה שוב</div>';
-      return;
-    }
-    // Verify matches actually exist in LinkedIn connections (AI sometimes hallucinates)
-    matches=matches.filter(function(m){
-      if(!m.name)return false;
-      const mName=m.name.toLowerCase().trim();
-      return liConnections.some(function(r){
-        const fn=(r['First Name']||r['first name']||'').toLowerCase().trim();
-        const ln=(r['Last Name']||r['last name']||'').toLowerCase().trim();
-        const full=(fn+' '+ln).trim();
-        return full===mName||mName.includes(fn)&&mName.includes(ln);
-      });
-    });
-    if(matches.length===0){
-      results.innerHTML='<div style="color:var(--red);padding:20px;text-align:center;">לא נמצאו התאמות — נסה שוב עם פרמטרים אחרים</div>';
-      return;
-    }
+    const matches=JSON.parse(text.replace(/```json|```/g,'').trim());
 
-    // Stage 2: web search on each company
-    results.innerHTML='<div style="text-align:center;padding:40px;color:var(--muted);"><div class="spinner" style="margin:0 auto 12px;"></div>שלב 2: בודק חברות ברשת...</div>';
-
-    const enriched = await enrichWithWebSearch(matches, co, goal);
-    // Sort by final score
-    enriched.sort(function(a,b){ return (b.finalScore||b.score||0)-(a.finalScore||a.score||0); });
-
-    renderLinkedInResults(enriched, co, results);
-
+    results.innerHTML=`
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--accent);margin-bottom:14px;">
+        🎯 Top ${matches.length} Matches מ-LinkedIn — ${co}
+      </div>
+      ${matches.map(m=>`
+        <div style="background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:10px;">
+          <div style="margin-bottom:6px;">
+            <span style="font-size:14px;font-weight:700;">${m.name}</span>
+            <span style="font-size:11px;color:var(--accent);margin-left:8px;">${m.title} @ ${m.company}</span>
+          </div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">${m.why}</div>
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div style="font-size:12px;color:var(--yellow);">→ ${m.action}</div>
+            <button class="btn btn-green btn-xs" onclick="addLinkedInMatchTocrm(${JSON.stringify(m).replace(/"/g,'&quot;')})">+ הוסף ל-CRM</button>
+          </div>
+        </div>`).join('')}`;
   }catch(e){
-    results.innerHTML='<div style="color:var(--red);padding:20px;text-align:center;">שגיאה — נסה שוב</div>';
+    results.innerHTML=`<div style="color:var(--red);padding:20px;text-align:center;">שגיאה — נסה שוב</div>`;
     console.error(e);
-  }
-}
-
-function renderLinkedInResults(matches, co, results){
-  var hasWeb=matches.some(function(m){return m.webInsight;});
-  var html='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">';
-  html+='<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--accent);">🎯 Top '+matches.length+' Matches — '+co+'</div>';
-  html+='<div style="font-size:11px;color:var(--muted);"><span style="color:var(--accent)">●</span> LinkedIn&nbsp;&nbsp;';
-  if(hasWeb)html+='<span style="color:#7c6fff">●</span> Web Research';
-  html+='</div></div>';
-
-  matches.forEach(function(m){
-    var score=m.finalScore||m.score||0;
-    var sc=score>=8?'#00e5b0':score>=6?'#7c6fff':'#ffd166';
-    var liQuery=encodeURIComponent((m.name||'')+' '+(m.company||''));
-    var liLink='https://www.linkedin.com/search/results/all/?keywords='+liQuery;
-    var webRow=m.webInsight?('<div style="font-size:11px;color:#7c6fff;margin-bottom:6px;padding:6px 8px;background:#7c6fff11;border-radius:6px;border-left:2px solid #7c6fff;">🌐 '+m.webInsight+'</div>'):'';
-    html+='<div style="background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:10px;">';
-    html+='<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">';
-    html+='<div><a href="'+liLink+'" target="_blank" style="font-size:14px;font-weight:700;color:var(--text);text-decoration:none;border-bottom:1px solid var(--accent);">'+m.name+'</a>';
-    html+='<span style="font-size:11px;color:var(--accent);margin-left:8px;">'+(m.title||'')+' @ '+(m.company||'')+'</span></div>';
-    html+='<span style="background:'+sc+'22;color:'+sc+';border:1px solid '+sc+'44;border-radius:8px;padding:2px 8px;font-size:11px;font-weight:700;">'+score+'/10</span>';
-    html+='</div>';
-    html+='<div style="font-size:12px;color:var(--muted);margin-bottom:6px;"><span style="color:var(--accent);font-size:10px;font-weight:600;">LINKEDIN</span> '+(m.why||'')+'</div>';
-    html+=webRow;
-    html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">';
-    html+='<div style="font-size:12px;color:var(--yellow);">→ '+(m.action||'')+'</div>';
-    var mStr=JSON.stringify(m).replace(/"/g,'&quot;');
-    html+='<button class="btn btn-green btn-xs" onclick="addLinkedInMatchTocrm('+mStr+')">+ CRM</button>';
-    html+='</div></div>';
-  });
-  results.innerHTML=html;
-}
-
-
-async function enrichWithWebSearch(matches, co, goal){
-  const coData=COMPANIES.find(c=>c.name===co);
-  const coDesc=coData&&coData.desc||coData&&coData.category||co;
-
-  // Build search queries for all companies at once
-  const companies=[...new Set(matches.map(function(m){return m.company;}).filter(Boolean))];
-  const queryList=companies.map(function(c){return c+' company what they do';}).join(', ');
-
-  try{
-    const res=await fetch(WORKER_URL,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        model:'claude-haiku-4-5-20251001',
-        max_tokens:2000,
-        tools:[{type:'web_search_20250305',name:'web_search'}],
-        system:'You are a BD research analyst. For each company, search and find: what they do, their size, and whether they are a good fit as '+goal+' for '+co+' ('+coDesc+'). Return ONLY a JSON array: [{"company":"...","insight":"1 sentence what they do","fit":"High/Medium/Low","reason":"why fit or not fit for '+goal+'","scoreAdjust":-2 to +3}]',
-        messages:[{role:'user',content:'Research these companies and assess fit as '+goal+' for '+co+': '+companies.slice(0,10).join(', ')}]
-      })
-    });
-    const data=await res.json();
-    const text=data.content&&data.content.filter(function(i){return i.type==='text';}).map(function(i){return i.text||'';}).join('')||'';
-    let companyData=[];
-    try{
-      const s=text.indexOf('['),e=text.lastIndexOf(']');
-      if(s!==-1&&e!==-1)companyData=JSON.parse(text.slice(s,e+1).replace(/[-]/g,' '));
-    }catch(err){}
-
-    // Merge web insights back into matches
-    return matches.map(function(m){
-      const info=companyData.find(function(c){return c.company&&m.company&&c.company.toLowerCase().includes(m.company.toLowerCase().slice(0,10));});
-      if(info){
-        return Object.assign({},m,{
-          webInsight:(info.insight||'')+(info.reason?' | '+info.reason:''),
-          finalScore:Math.min(10,Math.max(1,(m.score||5)+(info.scoreAdjust||0)))
-        });
-      }
-      return Object.assign({},m,{finalScore:m.score||5});
-    });
-  }catch(err){
-    // If web search fails, return original matches unchanged
-    return matches.map(function(m){return Object.assign({},m,{finalScore:m.score||5});});
   }
 }
 
@@ -2931,6 +2836,8 @@ function savePerson(){
 async function runMatching(){
   const co=document.getElementById('m-co').value;
   const goal=document.getElementById('m-goal').value;
+  const sector=document.getElementById('m-sector').value;
+  const geo=document.getElementById('m-geo').value;
   if(!co||!goal){notif('בחר חברה ומטרה');return;}
   const out=document.getElementById('match-out');
   out.innerHTML=`<div style="text-align:center;padding:40px;color:var(--muted);"><div class="spinner" style="margin:0 auto 12px;"></div>מנתח את הרשת שלך…</div>`;
@@ -2940,6 +2847,10 @@ async function runMatching(){
     `${p.name} | ${p.type} | ${p.role} | ${p.company} | ${p.geo} | companies: ${(p.companies||[]).join(',')} | strength: ${p.strength||0}`
   ).join('\n');
 
+  const filters=[];
+  if(sector)filters.push(`Sector focus: ${sector}`);
+  if(geo)filters.push(`Geography focus: ${geo}`);
+
   try{
     const res=await fetch(WORKER_URL,{
       method:'POST',
@@ -2948,10 +2859,13 @@ async function runMatching(){
         system:`You are a BD advisor for Tailwind (Omer Sadiv, Israeli BD firm, ex-Pernod Ricard).
 Portfolio company: ${co} — ${coData?.desc||coData?.category||''}
 Goal: ${goal}
+${filters.join('\n')}
 Return ONLY a JSON array of the 5 best matches from the network below.
+${sector?`Prioritize people connected to ${sector} sector.`:''}
+${geo?`Prioritize people with connections in ${geo}.`:''}
 Format: [{"name":"...","reason":"2 sentences why they fit","score":"Strong/High/Medium","action":"specific next step for Omer"}]
 Raw JSON only, no markdown.`,
-        messages:[{role:'user',content:`Network:\n${peopleSummary}\n\nWho are the best 5 matches for ${co} — ${goal}?`}]
+        messages:[{role:'user',content:`Network:\n${peopleSummary}\n\nWho are the best 5 matches for ${co} — ${goal}${sector?' in '+sector:''}${geo?' / '+geo:''}?`}]
       })
     });
     const rawText=await res.text();
@@ -2961,7 +2875,7 @@ Raw JSON only, no markdown.`,
     }
     let data;
     try{data=JSON.parse(rawText);}catch(e){
-      out.innerHTML=`<div style="color:var(--red);padding:20px;">Raw response:<br><pre>${rawText.slice(0,300)}</pre></div>`;
+      out.innerHTML=`<div style="color:var(--red);padding:20px;">Raw response:<br><pre style="font-size:10px;overflow:auto;white-space:pre-wrap;">${rawText.slice(0,400)}</pre></div>`;
       return;
     }
     if(data.error){
@@ -2972,12 +2886,12 @@ Raw JSON only, no markdown.`,
     let matches;
     try{matches=JSON.parse(text.replace(/```json|```/g,'').trim());}
     catch(e){
-      out.innerHTML=`<div style="color:var(--red);padding:20px;">Parse error:<br><pre>${text.slice(0,400)}</pre></div>`;
+      out.innerHTML=`<div style="color:var(--red);padding:20px;">Parse error:<br><pre style="font-size:10px;overflow:auto;white-space:pre-wrap;">${text.slice(0,400)}</pre></div>`;
       return;
     }
     out.innerHTML=`
       <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--accent);margin-bottom:14px;">
-        🎯 Top Matches — ${co} · ${goal}
+        🎯 Top Matches — ${co} · ${goal}${sector?' · '+sector:''}${geo?' · '+geo:''}
       </div>
       ${matches.map(m=>`
         <div style="background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:10px;">
@@ -2994,11 +2908,10 @@ Raw JSON only, no markdown.`,
           <div style="font-size:12px;color:var(--accent);">→ ${m.action}</div>
         </div>`).join('')}`;
   }catch(e){
-    out.innerHTML=`<div style="color:var(--red);padding:20px;text-align:center;">שגיאה — נסה שוב</div>`;
+    out.innerHTML=`<div style="color:var(--red);padding:20px;text-align:center;">שגיאה — נסה שוב<br><small>${e.message}</small></div>`;
     console.error(e);
   }
 }
-
 function runLeads(){
   const co=document.getElementById('l-co').value;
   const type=document.getElementById('l-type').value;
@@ -3497,9 +3410,9 @@ async function sendFloatChat(){
   const loadId='fload-'+Date.now();
   addFloatMsg('…','ai loading',loadId);
   try{
-    const res=await fetch(WORKER_URL,{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:800,system:buildContext(),messages:chatHistory})
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,system:buildContext(),messages:chatHistory})
     });
     const data=await res.json();
     const reply=data.content.map(i=>i.text||'').join('').trim();
@@ -3530,23 +3443,52 @@ function sendChat(){sendFloatChat();}
 function buildContext(){
   const companySummary=COMPANIES.map(co=>{
     const people=PEOPLE.filter(p=>p.companies&&p.companies.includes(co.name));
-    const clients=CLIENTS.filter(c=>c.portfolioCo===co.name);
-    const clientNames=clients.map(c=>c.name+'('+c.stage+')').join(', ');
-    return co.name+' | '+co.category+' | partners: '+people.map(p=>p.name).join(',')+' | clients: '+clientNames;
+    const clients=people.flatMap(p=>(p.clientsByCompany&&p.clientsByCompany[co.name])||[]);
+    return`${co.name} (${co.category}, ${co.commissionPct}% comm): partners=[${people.map(p=>p.name).join(', ')}], clients=[${clients.join(', ')}]`;
   }).join('\n');
-  const peopleSummary=PEOPLE.map(p=>'id:'+p.id+' '+p.name+' | '+tl(p.type)+' | '+p.role+' | '+p.company+' | '+p.geo+' | status:'+sl(p.status)+' | cos:'+(p.companies||[]).join(',')).join('\n');
+  const peopleSummary=PEOPLE.map(p=>`id:${p.id} | ${p.name} | ${tl(p.type)} | ${p.role} | ${p.company} | ${p.geo} | status:${sl(p.status)} | companies:${(p.companies||[]).join(',')}`).join('\n');
   const companyNames=COMPANIES.map(c=>c.name).join(', ');
-  return 'You are an AI assistant for Tailwind CRM (Omer Sadiv, Israeli BD firm).\n'+
-    'PORTFOLIO: '+companyNames+'\n'+
-    'COMPANIES:\n'+companySummary+'\n'+
-    'PEOPLE:\n'+peopleSummary+'\n'+
-    'INSTRUCTIONS:\n'+
-    '- Answer in Hebrew or English based on user language\n'+
-    '- To ADD a person respond ONLY with JSON: action=add_person, name, type, role, company, geo, companies, status, notes\n'+
-    '- To UPDATE status respond ONLY with JSON: action=update_status, personId, personName, newStatus\n'+
-    '- To ADD CLIENT respond ONLY with JSON: action=add_client, personId, personName, company, clientName, clientType\n'+
-    'For actions return ONLY valid JSON. For questions return only text.';
+  return`You are an AI assistant for Tailwind CRM (Omer Sadiv, Israeli BD firm).
+
+PORTFOLIO COMPANIES: ${companyNames}
+
+COMPANIES DETAIL:\n${companySummary}
+
+PEOPLE IN CRM:\n${peopleSummary}
+
+INSTRUCTIONS:
+- If the user asks a question → answer it concisely in their language (Hebrew or English)
+- If the user wants to ADD something (person, client, lead) → respond ONLY with a JSON action object like this:
+{
+  "action": "add_person",
+  "name": "Full Name",
+  "type": "partner|sub|referrer|contact|client",
+  "role": "their title",
+  "company": "their company",
+  "geo": "country/region",
+  "companies": ["Portfolio Company Name"],
+  "status": "initial|followup|signed|prospects|hold",
+  "notes": "context"
 }
+- If the user wants to UPDATE a status → respond ONLY with:
+{
+  "action": "update_status",
+  "personId": <id number>,
+  "personName": "name",
+  "newStatus": "initial|followup|signed|prospects|hold"
+}
+- If the user wants to ADD A CLIENT to a partner/company → respond ONLY with:
+{
+  "action": "add_client",
+  "personId": <id>,
+  "personName": "name",
+  "company": "Portfolio Company",
+  "clientName": "client name",
+  "clientType": "potential|signed"
+}
+IMPORTANT: For actions, return ONLY the JSON with no other text. For questions, return only text with no JSON.`;
+}
+
 
 function buildActionCard(action){
   const wrap=document.createElement('div');
@@ -3645,59 +3587,9 @@ function confirmAction(actionStr){
   if(card)card.style.borderColor='var(--green)';
 }
 
-
-function switchLeadTab(tab){
-  document.getElementById('tab-li-content').style.display=tab==='li'?'block':'none';
-  document.getElementById('tab-crm-content').style.display=tab==='crm'?'block':'none';
-  const lBtn=document.getElementById('tab-li-btn');
-  const cBtn=document.getElementById('tab-crm-btn');
-  if(tab==='li'){
-    lBtn.style.background='var(--accent)';lBtn.style.color='white';lBtn.style.borderColor='var(--accent)';
-    cBtn.style.background='var(--surf)';cBtn.style.color='var(--muted)';cBtn.style.borderColor='var(--border)';
-  }else{
-    cBtn.style.background='var(--accent)';cBtn.style.color='white';cBtn.style.borderColor='var(--accent)';
-    lBtn.style.background='var(--surf)';lBtn.style.color='var(--muted)';lBtn.style.borderColor='var(--border)';
-  }
-}
-
-async function runCRMLeads(){
-  const co=document.getElementById('crm-co').value;
-  const type=document.getElementById('crm-goal').value;
-  const out=document.getElementById('crm-lead-out');
-  if(!co){notif('בחר חברה תחילה');return;}
-  out.innerHTML='<div style="text-align:center;padding:40px;color:var(--muted);"><div class="spinner" style="margin:0 auto 12px;"></div>מנתח רשת...</div>';
-  const coData=COMPANIES.find(c=>c.name===co);
-  const peopleSummary=PEOPLE.filter(p=>p.id!==0).map(p=>p.name+' | '+tl(p.type)+' | '+p.role+' | '+p.company+' | '+p.geo+' | cos:'+(p.companies||[]).join(',')+' | strength:'+(p.strength||0)).join('\n');
-  try{
-    const res=await fetch(WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:1500,
-        system:'Return ONLY a valid JSON array. Each item: {"name":"...","role":"...","company":"...","score":1-10,"why":"1 sentence","action":"next step"}',
-        messages:[{role:'user',content:'Find best matches in this CRM network for '+co+' ('+( coData&&coData.desc||'')+') looking for '+type+'. Return TOP 8 as JSON array.\n\n'+peopleSummary}]
-      })
-    });
-    const data=await res.json();
-    const text=data.content&&data.content.map(i=>i.text||'').join('')||'';
-    let matches=[];
-    const s=text.indexOf('['),e=text.lastIndexOf(']');
-    if(s!==-1&&e!==-1)matches=JSON.parse(text.slice(s,e+1).replace(/[\x00-\x1f\x7f]/g,' '));
-    out.innerHTML='<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--accent);margin-bottom:14px;">🎯 '+matches.length+' התאמות מהרשת — '+co+'</div>'+
-      matches.map(function(m){
-        var sc=m.score>=8?'#00e5b0':m.score>=6?'#7c6fff':'#ffd166';
-        return '<div style="background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:10px;">'+
-          '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">'+
-          '<div><span style="font-size:14px;font-weight:700;">'+m.name+'</span>'+
-          '<span style="font-size:11px;color:var(--accent);margin-left:8px;">'+(m.role||'')+' @ '+(m.company||'')+'</span></div>'+
-          '<span style="background:'+sc+'22;color:'+sc+';border:1px solid '+sc+'44;border-radius:8px;padding:2px 8px;font-size:11px;font-weight:700;">'+m.score+'/10</span></div>'+
-          '<div style="font-size:12px;color:var(--muted);margin-bottom:6px;">'+(m.why||'')+'</div>'+
-          '<div style="font-size:12px;color:var(--yellow);">→ '+(m.action||'')+'</div></div>';
-      }).join('');
-  }catch(e){out.innerHTML='<div style="color:var(--red);padding:20px;">שגיאה — נסה שוב</div>';}
-}
-
 function addChatMsg(text,type,id){
   addFloatMsg(text,type,id);
 }
-
 </script>
 </body>
 </html>
