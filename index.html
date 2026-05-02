@@ -272,6 +272,7 @@ hr{border:none;border-top:1px solid var(--border);margin:16px 0;}
   <div class="nav-item" onclick="nav('revenue')"><span>💰</span> My Revenue</div>
   <div class="nav-group">AI Tools</div>
   <div class="nav-item" onclick="nav('matching')"><span>🎯</span> BD Intelligence</div>
+  <div class="nav-item" onclick="nav('pipeline')"><span>🚀</span> Pipeline</div>
   <div class="nav-item" onclick="nav('ai')"><span>💬</span> AI Assistant</div>
   <div class="sidebar-footer">
     Tailwind · Omer Sadiv
@@ -729,19 +730,69 @@ hr{border:none;border-top:1px solid var(--border);margin:16px 0;}
   <div class="page-sub">Use the chat button in the bottom-right corner — available on every page.</div>
 </div>
 
+
+<div class="page" id="page-pipeline">
+  <div class="page-title">🚀 Pipeline</div>
+  <div class="page-sub">לידים שהחלטת לקדם — לחץ Generate Email לקבל מייל היכרות מותאם</div>
+  <div id="pipeline-empty" style="text-align:center;padding:60px;color:var(--muted);">
+    <div style="font-size:40px;margin-bottom:12px;">🎯</div>
+    <div style="font-size:14px;">אין לידים בפול עדיין</div>
+    <div style="font-size:12px;margin-top:6px;color:var(--muted2);">הוסף לידים מדף BD Intelligence</div>
+  </div>
+  <div id="pipeline-list" style="display:flex;flex-direction:column;gap:12px;"></div>
+</div>
+
+<!-- EMAIL MODAL -->
+<div id="email-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:2000;align-items:center;justify-content:center;">
+  <div style="background:var(--surf);border:1px solid var(--border2);border-radius:16px;width:600px;max-width:95vw;max-height:85vh;display:flex;flex-direction:column;overflow:hidden;">
+    <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+      <div style="font-size:14px;font-weight:700;" id="email-modal-title">✉️ Generated Email</div>
+      <button onclick="closeEmailModal()" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;">×</button>
+    </div>
+    <div style="padding:20px;overflow-y:auto;flex:1;">
+      <div id="email-modal-loading" style="text-align:center;padding:40px;color:var(--muted);">
+        <div class="spinner" style="margin:0 auto 12px;"></div>מייצר מייל…
+      </div>
+      <div id="email-modal-content" style="display:none;">
+        <div style="margin-bottom:12px;">
+          <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:4px;">Subject</div>
+          <div id="email-subject" style="background:var(--surf2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:13px;font-weight:600;"></div>
+        </div>
+        <div>
+          <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:4px;">Body</div>
+          <textarea id="email-body" style="width:100%;min-height:280px;font-size:13px;line-height:1.7;resize:vertical;"></textarea>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:14px;">
+          <button onclick="copyEmail()" class="btn btn-primary btn-sm">📋 Copy Email</button>
+          <button onclick="copySubject()" class="btn btn-sm" style="background:var(--surf2);border:1px solid var(--border);">Copy Subject</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 </main>
 
 <!-- FLOATING AI ASSISTANT -->
-<!-- Claude Button — opens this conversation -->
-<div style="position:fixed;bottom:24px;right:24px;z-index:1000;">
-  <a href="https://claude.ai" target="_blank"
-    style="width:52px;height:52px;border-radius:50%;background:var(--accent);
-      box-shadow:0 4px 16px rgba(124,111,255,0.5);font-size:22px;
-      display:flex;align-items:center;justify-content:center;
-      text-decoration:none;transition:transform 0.2s;"
-    title="Open Claude to make changes"
-    onmouseover="this.style.transform='scale(1.1)'"
-    onmouseout="this.style.transform='scale(1)'">💬</a>
+<div id="float-btn" onclick="toggleFloatChat()" style="position:fixed;bottom:24px;right:24px;z-index:1000;
+  width:52px;height:52px;border-radius:50%;background:var(--accent);
+  box-shadow:0 4px 16px rgba(124,111,255,0.5);font-size:22px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;transition:transform 0.2s;"
+  onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">💬</div>
+
+<div id="float-chat-window" style="display:none;position:fixed;bottom:88px;right:24px;z-index:999;
+  width:380px;height:520px;background:var(--surf);border:1px solid var(--border2);
+  border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,0.5);
+  flex-direction:column;overflow:hidden;">
+  <div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+    <div style="font-size:13px;font-weight:700;">💬 AI Assistant</div>
+    <button onclick="toggleFloatChat()" style="background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;line-height:1;">×</button>
+  </div>
+  <div id="float-messages" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;"></div>
+  <div style="padding:12px;border-top:1px solid var(--border);display:flex;gap:8px;">
+    <input id="float-input" type="text" placeholder="Ask anything about your CRM…"
+      style="flex:1;font-size:13px;" onkeydown="if(event.key==='Enter')sendFloatChat()"/>
+    <button onclick="sendFloatChat()" class="btn btn-primary btn-sm">↑</button>
+  </div>
 </div>
 <script>
 // ============================================================
@@ -1129,13 +1180,14 @@ function nav(id){
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.getElementById('page-'+id).classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n=>{
-    if((id==='dashboard'&&n.textContent.includes('Dashboard'))||(id==='companies'&&n.textContent.includes('Companies'))||(id==='people'&&n.textContent.includes('People'))||(id==='clients'&&n.textContent.includes('Clients'))||(id==='revenue'&&n.textContent.includes('Revenue'))||(id==='matching'&&n.textContent.includes('Matching'))||(id==='leads'&&n.textContent.includes('Lead'))||(id==='linkedin'&&n.textContent.includes('LinkedIn'))||(id==='ai'&&n.textContent.includes('Assistant')))n.classList.add('active');
+    if((id==='dashboard'&&n.textContent.includes('Dashboard'))||(id==='companies'&&n.textContent.includes('Companies'))||(id==='people'&&n.textContent.includes('People'))||(id==='clients'&&n.textContent.includes('Clients'))||(id==='revenue'&&n.textContent.includes('Revenue'))||(id==='matching'&&n.textContent.includes('BD Intelligence'))||(id==='pipeline'&&n.textContent.includes('Pipeline'))||(id==='leads'&&n.textContent.includes('Lead'))||(id==='linkedin'&&n.textContent.includes('LinkedIn'))||(id==='ai'&&n.textContent.includes('Assistant')))n.classList.add('active');
   });
   if(id==='dashboard')renderDash();
   if(id==='companies')renderCompanies();
   if(id==='people')renderPeople();
   if(id==='clients')renderClientsPage();
   if(id==='revenue')renderRevenue();
+  if(id==='pipeline')renderPipeline();
 }
 
 // ============================================================
@@ -1228,7 +1280,21 @@ Company: ${co||'all portfolio'} — ${coData?.desc||coData?.category||''}
 Goal: ${goal}
 ${filters.join('\n')}
 Already in CRM: ${existing}
-From the LinkedIn connections below, find the TOP 10 most relevant people.
+
+CRITICAL RULE — BUYER PERSONAS:
+Only return people whose title matches the relevant decision-maker for this company.
+CEO is ALWAYS the top priority if there is a direct relationship.
+Company-specific buyer personas:
+- Limy AI → CMO, VP Marketing, Head of Digital, Growth Lead, CEO
+- Cytrix → CISO, VP Security, Head of Cyber, SOC Director, CEO
+- Blings → CMO, VP Marketing, Head of Content, Digital Director, CEO
+- VISITT → COO, Facility Manager, Head of Real Estate Ops, Property Director, CEO
+- Sency AI → CPO, VP Product, Head of Wellness, CTO, CEO
+- Enabley → CHRO, L&D Director, VP People, Head of Training, CEO
+- Shavit Group → CISO, Intelligence Director, VP Security, CEO
+- RePower → COO, Head of Operations, Plant Manager, VP Energy, CEO
+NEVER return Engineers, Developers, Analysts, or individual contributors — they are not decision-makers.
+From the LinkedIn connections below, find the TOP 10 most relevant people. Apply the buyer persona rules above strictly.
 ${sector?`Focus on ${sector} sector.`:''}${geo?` Focus on ${geo} geography.`:''}
 Return ONLY JSON array:
 [{"name":"...","title":"...","company":"...","why":"2 sentences","action":"specific intro approach"}]
@@ -1279,6 +1345,7 @@ Raw JSON only.`,
                   <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
                 </svg>
               </a>
+              <button class="btn btn-sm" onclick="addToPipeline({name:'${m.name}',reason:'${(m.why||'').replace(/'/g,"\'")}',action:'${(m.action||'').replace(/'/g,"\'")}',score:'High',company:'${coSel}'})" style="font-size:11px;padding:4px 10px;background:rgba(0,229,176,0.1);border:1px solid rgba(0,229,176,0.3);color:var(--green);border-radius:6px;cursor:pointer;">+ פול</button>
               <button class="btn btn-green btn-xs" onclick="addLinkedInMatchTocrm(${JSON.stringify(m).replace(/"/g,'&quot;')})">+ הוסף ל-CRM</button>
             </div>
           </div>
@@ -2965,9 +3032,23 @@ async function runMatching(){
 Portfolio company: ${co} — ${coData?.desc||coData?.category||''}
 Goal: ${goal}
 ${filters.join('\n')}
-Return ONLY a JSON array of the 5 best matches from the network below.
+
+CRITICAL RULE — BUYER PERSONAS:
+Only return people whose title matches the relevant decision-maker for this company.
+CEO is ALWAYS the top priority if there is a direct relationship.
+Company-specific buyer personas:
+- Limy AI → CMO, VP Marketing, Head of Digital, Growth Lead, CEO
+- Cytrix → CISO, VP Security, Head of Cyber, SOC Director, CEO
+- Blings → CMO, VP Marketing, Head of Content, Digital Director, CEO
+- VISITT → COO, Facility Manager, Head of Real Estate Ops, Property Director, CEO
+- Sency AI → CPO, VP Product, Head of Wellness, CTO, CEO
+- Enabley → CHRO, L&D Director, VP People, Head of Training, CEO
+- Shavit Group → CISO, Intelligence Director, VP Security, CEO
+- RePower → COO, Head of Operations, Plant Manager, VP Energy, CEO
+NEVER return Engineers, Developers, Analysts, or individual contributors — they are not decision-makers.
 ${sector?`Prioritize people connected to ${sector} sector.`:''}
 ${geo?`Prioritize people with connections in ${geo}.`:''}
+Return ONLY a JSON array of the 5 best matches from the network below.
 Format: [{"name":"...","reason":"2 sentences why they fit","score":"Strong/High/Medium","action":"specific next step for Omer"}]
 Raw JSON only, no markdown.`,
         messages:[{role:'user',content:`Network:\n${peopleSummary}\n\nWho are the best 5 matches for ${co} — ${goal}${sector?' in '+sector:''}${geo?' / '+geo:''}?`}]
@@ -3010,15 +3091,18 @@ Raw JSON only, no markdown.`,
             </span>
           </div>
           <div style="font-size:13px;color:var(--muted);margin-bottom:8px;">${m.reason}</div>
-          <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
             <div style="font-size:12px;color:var(--accent);">→ ${m.action}</div>
-            <a href="https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(m.name)}" target="_blank"
+            <div style="display:flex;gap:6px;align-items:center;">
+              <button class="btn btn-sm" onclick="addToPipeline({name:'${m.name}',reason:'${(m.reason||'').replace(/'/g,"\'")}',action:'${(m.action||'').replace(/'/g,"\'")}',score:'${m.score}',company:'${co}'})" style="font-size:11px;padding:4px 10px;background:rgba(0,229,176,0.1);border:1px solid rgba(0,229,176,0.3);color:var(--green);border-radius:6px;cursor:pointer;">+ פול</button>
+              <a href="https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(m.name)}" target="_blank"
               style="display:flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:7px;background:#0a66c2;text-decoration:none;flex-shrink:0;"
               title="Search ${m.name} on LinkedIn">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
                 <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
               </svg>
             </a>
+            </div>
           </div>
         </div>`).join('')}`;
   }catch(e){
@@ -3715,6 +3799,176 @@ function confirmAction(actionStr){
 
 function addChatMsg(text,type,id){
   addFloatMsg(text,type,id);
+}
+
+// ============================================================
+// PIPELINE
+// ============================================================
+let PIPELINE = JSON.parse(localStorage.getItem('tw_pipeline')||'[]');
+
+function savePipeline(){
+  localStorage.setItem('tw_pipeline', JSON.stringify(PIPELINE));
+}
+
+function addToPipeline(lead){
+  const exists = PIPELINE.find(l => l.name === lead.name && l.company === lead.company);
+  if(exists){ notif(lead.name + ' כבר בפול'); return; }
+  lead.id = Date.now();
+  lead.status = 'new';
+  lead.addedAt = new Date().toLocaleDateString('he-IL');
+  PIPELINE.push(lead);
+  savePipeline();
+  notif('✓ ' + lead.name + ' נוסף לפול');
+}
+
+function removeFromPipeline(id){
+  PIPELINE = PIPELINE.filter(l => l.id !== id);
+  savePipeline();
+  renderPipeline();
+}
+
+function setPipelineStatus(id, status){
+  const lead = PIPELINE.find(l => l.id === id);
+  if(lead){ lead.status = status; savePipeline(); renderPipeline(); }
+}
+
+const PIPELINE_STATUSES = [
+  {key:'new', label:'חדש', color:'var(--muted)'},
+  {key:'contacted', label:'פנייה נשלחה', color:'var(--yellow)'},
+  {key:'meeting', label:'פגישה נקבעה', color:'var(--green)'},
+  {key:'pass', label:'לא רלוונטי', color:'var(--red)'}
+];
+
+const COMPANY_PERSONAS = {
+  'Limy AI': 'COO, CMO, Founder, VP Marketing, Head of Digital, CEO',
+  'Cytrix': 'CISO, VP Security, Head of Cyber, SOC Director, CEO',
+  'Blings': 'CMO, VP Marketing, Head of Content, Digital Director, CEO',
+  'VISITT': 'COO, Facility Manager, Head of Real Estate Ops, Property Director, CEO',
+  'Sency AI': 'CPO, VP Product, Head of Wellness, CTO, CEO',
+  'Enabley': 'CHRO, L&D Director, VP People, Head of Training, CEO',
+  'Shavit Group': 'CISO, Intelligence Director, VP Security, CEO',
+  'RePower': 'COO, Head of Operations, Plant Manager, VP Energy, CEO'
+};
+
+const COMPANY_PITCH = {
+  'Limy AI': 'Limy AI is CDN-level infrastructure that identifies every AI agent interaction (ChatGPT, Perplexity, Google AI Overviews) and connects those prompts to revenue. Clients include AstraZeneca, Samsung, L\u2019Or\u00e9al, KIA. Raised $10M seed from Flybridge + a16z.',
+  'Cytrix': 'Cytrix is an agentic cybersecurity pentesting platform — automated, continuous security validation. Clients include Israel Discount Bank, Cellebrite, eToro.',
+  'Blings': 'Blings creates AI-powered interactive personalized video at enterprise scale — proven to dramatically increase conversion rates.',
+  'VISITT': 'VISITT is a PropTech platform for building operations and tenant experience — streamlines facility management and reduces operational costs.',
+  'Sency AI': 'Sency AI uses computer vision for AI-powered movement and fitness analysis — enables any app to add real-time exercise tracking.',
+  'Enabley': 'Enabley is an LMS/KMS platform built for deskless workers — proven in LATAM enterprise with measurable workforce performance improvements.',
+  'Shavit Group': 'Shavit Group provides cyber intelligence and OSINT solutions for enterprise and government security teams.',
+  'RePower': 'RePower is an industrial NIR sensor for biogas plants — enables real-time feedstock analysis, optimizing gas yield and reducing operational waste.'
+};
+
+function renderPipeline(){
+  const list = document.getElementById('pipeline-list');
+  const empty = document.getElementById('pipeline-empty');
+  if(!list) return;
+  if(PIPELINE.length === 0){
+    empty.style.display = 'block';
+    list.innerHTML = '';
+    return;
+  }
+  empty.style.display = 'none';
+  list.innerHTML = PIPELINE.map(lead => {
+    const st = PIPELINE_STATUSES.find(s => s.key === lead.status) || PIPELINE_STATUSES[0];
+    const coData = COMPANIES.find(c => c.name === lead.company);
+    const coColor = coData ? coData.color : 'var(--accent)';
+    return `
+    <div style="background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:16px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+        <div>
+          <span style="font-size:15px;font-weight:700;">${lead.name}</span>
+          <span style="display:inline-block;margin-left:10px;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;background:${coColor}22;color:${coColor};border:1px solid ${coColor}44;">${lead.company}</span>
+        </div>
+        <button onclick="removeFromPipeline(${lead.id})" style="background:none;border:none;color:var(--muted2);font-size:16px;cursor:pointer;padding:0 4px;" title="הסר מהפול">×</button>
+      </div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">${lead.reason||lead.why||''}</div>
+      <div style="font-size:11px;color:var(--yellow);margin-bottom:12px;">→ ${lead.action||''}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+        <div style="display:flex;gap:5px;flex-wrap:wrap;">
+          ${PIPELINE_STATUSES.map(s=>`
+            <button onclick="setPipelineStatus(${lead.id},'${s.key}')"
+              style="padding:4px 10px;border-radius:12px;font-size:10px;font-weight:600;cursor:pointer;
+              border:1px solid ${lead.status===s.key ? s.color : 'var(--border)'};
+              background:${lead.status===s.key ? s.color+'22' : 'transparent'};
+              color:${lead.status===s.key ? s.color : 'var(--muted)'};">${s.label}</button>
+          `).join('')}
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <a href="https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(lead.name)}" target="_blank"
+            style="display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:6px;background:#0a66c2;text-decoration:none;"
+            title="LinkedIn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+          </a>
+          <button onclick="generateEmail(${lead.id})" class="btn btn-primary btn-sm" style="font-size:12px;">✉️ Generate Email</button>
+        </div>
+      </div>
+      <div style="font-size:9px;color:var(--muted2);margin-top:8px;">נוסף: ${lead.addedAt||''}</div>
+    </div>`;
+  }).join('');
+}
+
+async function generateEmail(leadId){
+  const lead = PIPELINE.find(l => l.id === leadId);
+  if(!lead) return;
+  const modal = document.getElementById('email-modal');
+  const loading = document.getElementById('email-modal-loading');
+  const content = document.getElementById('email-modal-content');
+  const title = document.getElementById('email-modal-title');
+  title.textContent = '✉️ ' + lead.name + ' — ' + lead.company;
+  modal.style.display = 'flex';
+  loading.style.display = 'block';
+  content.style.display = 'none';
+
+  const pitch = COMPANY_PITCH[lead.company] || lead.company;
+  const persona = COMPANY_PERSONAS[lead.company] || 'decision maker';
+
+  try{
+    const res = await fetch(WORKER_URL, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        system:`You are writing a cold intro email on behalf of Omer Sadiv, founder of Tailwind Partners — an Israeli BD firm that connects top tech startups to global markets. Omer has a background at Pernod Ricard and operates through warm C-level relationships. Write in a professional but personal tone. The email must be concise (max 120 words body), personal, and end with a clear CTA to a 20-minute call. Do NOT use generic phrases like "I hope this email finds you well". Write in English unless otherwise specified. Return JSON only: {"subject":"...","body":"..."}`,
+        messages:[{role:'user',content:`Write an intro email to ${lead.name} (${persona} level) to introduce them to ${lead.company}.
+
+About ${lead.company}: ${pitch}
+
+Why this person: ${lead.reason||lead.why||'relevant decision maker'}
+
+The email is from Omer Sadiv / Tailwind Partners. Goal: get a 20-minute intro call. Keep it sharp, no fluff.`}]
+      })
+    });
+    const data = await res.json();
+    const text = data.content?.map(i=>i.text||'').join('').trim();
+    let parsed;
+    try{ parsed = JSON.parse(text.replace(/```json|```/g,'').trim()); }
+    catch(e){ parsed = {subject:'Intro: '+lead.company, body:text}; }
+    document.getElementById('email-subject').textContent = parsed.subject;
+    document.getElementById('email-body').value = parsed.body;
+    loading.style.display = 'none';
+    content.style.display = 'block';
+  }catch(e){
+    loading.style.display = 'none';
+    content.style.display = 'block';
+    document.getElementById('email-subject').textContent = 'Error';
+    document.getElementById('email-body').value = 'שגיאה — נסה שוב';
+  }
+}
+
+function closeEmailModal(){
+  document.getElementById('email-modal').style.display = 'none';
+}
+
+function copyEmail(){
+  const subj = document.getElementById('email-subject').textContent;
+  const body = document.getElementById('email-body').value;
+  navigator.clipboard.writeText('Subject: '+subj+'\n\n'+body).then(()=>notif('✓ Email copied'));
+}
+
+function copySubject(){
+  navigator.clipboard.writeText(document.getElementById('email-subject').textContent).then(()=>notif('✓ Subject copied'));
 }
 </script>
 </body>
