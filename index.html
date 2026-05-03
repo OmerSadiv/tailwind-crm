@@ -1291,7 +1291,10 @@ function renderLiResults(){
         <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">${m.why}</div>
         <div style="display:flex;justify-content:space-between;align-items:center;">
           <div style="font-size:12px;color:var(--yellow);">→ ${m.action}</div>
-          <button class="btn btn-green btn-xs" onclick="addLinkedInMatchTocrm(${JSON.stringify(m).replace(/"/g,'&quot;')})">+ הוסף ל-CRM</button>
+          <div style="display:flex;gap:6px;">
+            <button class="btn btn-ghost btn-xs" onclick="generateIntroMsg(${JSON.stringify(m).replace(/"/g,'&quot;')})">✉ הודעה</button>
+            <button class="btn btn-green btn-xs" onclick="addLinkedInMatchTocrm(${JSON.stringify(m).replace(/"/g,'&quot;')})">+ CRM</button>
+          </div>
         </div>
       </div>`).join('')}
     ${hasMore?`
@@ -1304,6 +1307,73 @@ function renderLiResults(){
         ✅ הוצגו כל ${allMatches.length} התוצאות
       </div>`}
   `;
+}
+
+function generateIntroMsg(m){
+  const co=document.getElementById('li-co')?.value||'';
+  const goal=document.getElementById('li-goal')?.value||'Enterprise Client';
+
+  // Show channel picker overlay
+  const overlay=document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;';
+  overlay.innerHTML=`
+    <div style="background:var(--surf);border:1px solid var(--border2);border-radius:16px;padding:24px;width:420px;max-width:95vw;">
+      <div style="font-size:15px;font-weight:700;margin-bottom:6px;">✉ הודעה ל-${m.name}</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:20px;">${m.title} @ ${m.company}</div>
+      <div style="display:flex;gap:8px;margin-bottom:16px;">
+        <button onclick="doGenerateIntro(${JSON.stringify(m).replace(/"/g,'&quot;')},'${co}','${goal}','linkedin',this.closest('div').parentElement.parentElement)"
+          style="flex:1;padding:12px;background:var(--surf2);border:1px solid var(--border);border-radius:10px;color:var(--text);cursor:pointer;font-size:12px;font-weight:600;">
+          💼 LinkedIn DM
+        </button>
+        <button onclick="doGenerateIntro(${JSON.stringify(m).replace(/"/g,'&quot;')},'${co}','${goal}','email',this.closest('div').parentElement.parentElement)"
+          style="flex:1;padding:12px;background:var(--surf2);border:1px solid var(--border);border-radius:10px;color:var(--text);cursor:pointer;font-size:12px;font-weight:600;">
+          📧 Email
+        </button>
+        <button onclick="doGenerateIntro(${JSON.stringify(m).replace(/"/g,'&quot;')},'${co}','${goal}','whatsapp',this.closest('div').parentElement.parentElement)"
+          style="flex:1;padding:12px;background:var(--surf2);border:1px solid var(--border);border-radius:10px;color:var(--text);cursor:pointer;font-size:12px;font-weight:600;">
+          💬 WhatsApp
+        </button>
+      </div>
+      <button onclick="this.closest('div[style*=fixed]').remove()" style="width:100%;padding:8px;background:none;border:1px solid var(--border);border-radius:8px;color:var(--muted);cursor:pointer;">ביטול</button>
+    </div>`;
+  document.body.appendChild(overlay);
+}
+
+async function doGenerateIntro(m,co,goal,channel,overlayEl){
+  const channelGuide={
+    'linkedin':'LinkedIn DM — max 300 chars, warm and personal, no pitch, end with question',
+    'email':'Professional email in Hebrew — subject line + 3 short paragraphs, specific to their role',
+    'whatsapp':'WhatsApp — casual Hebrew, short, max 150 chars, friendly'
+  };
+  const coData=COMPANIES.find(c=>c.name===co);
+  overlayEl.innerHTML=`<div style="background:var(--surf);border:1px solid var(--border2);border-radius:16px;padding:40px;text-align:center;"><div class="spinner" style="margin:0 auto 16px;"></div><div style="color:var(--muted);font-size:13px;">מנסח הודעה…</div></div>`;
+  try{
+    const res=await fetch(WORKER_URL,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        system:`You are Omer Sadiv, founder of Tailwind (Israeli BD firm, ex-Pernod Ricard). Write a personalized outreach message. Be specific and warm, no generic phrases. Reference their exact role and company. ${channelGuide[channel]}`,
+        messages:[{role:'user',content:`Write a ${channel} outreach to ${m.name}, ${m.title} at ${m.company}. Goal: introduce ${co} (${coData?.desc||coData?.category||''}) and explore ${goal} opportunity. Why they fit: ${m.why||''}.`}]
+      })
+    });
+    const data=await res.json();
+    const msg=data.content?.map(i=>i.text||'').join('')||'No response';
+    overlayEl.innerHTML=`
+      <div style="background:var(--surf);border:1px solid var(--border2);border-radius:16px;padding:24px;width:500px;max-width:95vw;">
+        <div style="font-size:13px;font-weight:700;margin-bottom:12px;">
+          ${channel==='linkedin'?'💼 LinkedIn DM':channel==='email'?'📧 Email':'💬 WhatsApp'} — ${m.name}
+        </div>
+        <div style="background:var(--surf2);border-radius:10px;padding:14px;font-size:13px;line-height:1.7;white-space:pre-wrap;margin-bottom:16px;max-height:300px;overflow-y:auto;">${msg}</div>
+        <div style="display:flex;gap:8px;">
+          <button onclick="navigator.clipboard.writeText(${JSON.stringify(msg).replace(/"/g,'&quot;')});notif('הועתק ✓')"
+            class="btn btn-primary btn-sm" style="flex:1;">📋 העתק</button>
+          <button onclick="this.closest('div[style*=fixed]').remove()"
+            class="btn btn-ghost btn-sm">סגור</button>
+        </div>
+      </div>`;
+  }catch(e){
+    overlayEl.innerHTML=`<div style="background:var(--surf);border-radius:16px;padding:24px;color:var(--red);">שגיאה — Worker לא מחובר</div>`;
+  }
 }
 
 function addLinkedInMatchTocrm(m){
