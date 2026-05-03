@@ -463,10 +463,24 @@ hr{border:none;border-top:1px solid var(--border);margin:16px 0;}
 
 <!-- CLIENTS -->
 <div class="page" id="page-clients">
-  <div class="page-title">🤝 Clients</div>
-  <div class="page-sub">All client companies — click to view contacts, deal status and revenue</div>
+  <div class="page-title">🤝 Deals</div>
+  <div class="page-sub">לקוחות ופרטנרים — עקוב על כל עסקה מהפנייה הראשונה עד החתימה</div>
+
+  <!-- Type tabs -->
+  <div style="display:flex;gap:4px;margin-bottom:16px;background:var(--surf);border-radius:10px;padding:4px;width:fit-content;">
+    <button id="deals-tab-all" onclick="setDealsTab('all')"
+      style="padding:7px 16px;border-radius:8px;border:none;cursor:pointer;font-size:12px;font-weight:600;background:var(--accent);color:#fff;">
+      📋 הכל</button>
+    <button id="deals-tab-client" onclick="setDealsTab('client')"
+      style="padding:7px 16px;border-radius:8px;border:none;cursor:pointer;font-size:12px;font-weight:600;background:transparent;color:var(--muted);">
+      💰 לקוחות</button>
+    <button id="deals-tab-partner" onclick="setDealsTab('partner')"
+      style="padding:7px 16px;border-radius:8px;border:none;cursor:pointer;font-size:12px;font-weight:600;background:transparent;color:var(--muted);">
+      🤝 פרטנרים</button>
+  </div>
+
   <div style="display:flex;gap:10px;align-items:center;margin-bottom:16px;">
-    <div class="search-wrap" style="flex:1;margin:0;"><span class="search-icon">🔍</span><input id="cl-search" placeholder="Search client, company, sector…" oninput="renderClientsPage()" style="margin:0;"/></div>
+    <div class="search-wrap" style="flex:1;margin:0;"><span class="search-icon">🔍</span><input id="cl-search" placeholder="Search deal, company, sector…" oninput="renderClientsPage()" style="margin:0;"/></div>
     <select id="cl-co-filter" style="margin:0;width:160px;" onchange="renderClientsPage()">
       <option value="">All companies</option>
       <option>Limy AI</option><option>Blings</option><option>Cytrix</option>
@@ -475,14 +489,14 @@ hr{border:none;border-top:1px solid var(--border);margin:16px 0;}
     </select>
     <select id="cl-stage-filter" style="margin:0;width:150px;" onchange="renderClientsPage()">
       <option value="">All stages</option>
-      <option value="email_sent">Initial Email</option>
-      <option value="intro_meeting">Intro Meeting</option>
+      <option value="email_sent">Initial Contact</option>
+      <option value="intro_meeting">First Meeting</option>
       <option value="followup">Follow-up</option>
-      <option value="proposal">Proposal Sent</option>
-      <option value="pilot">Pilot Scheduled</option>
-      <option value="contract">Contract Signed ✓</option>
+      <option value="proposal">Proposal / Draft</option>
+      <option value="pilot">Pilot</option>
+      <option value="contract">Signed ✓</option>
     </select>
-    <button class="btn btn-primary btn-sm" onclick="openAddClient()">+ Add Client</button>
+    <button class="btn btn-primary btn-sm" onclick="openAddClient()">+ Add Deal</button>
   </div>
   <div id="clients-list"></div>
 </div>
@@ -831,6 +845,18 @@ const CLIENT_STAGES=[
   {id:'hold',          label:'On Hold',             color:'#888888', icon:'⏸️'},
 ];
 
+const PARTNER_STAGES=[
+  {id:'email_sent',    label:'Initial Contact',     color:'#8888aa', icon:'📧'},
+  {id:'intro_meeting', label:'First Meeting',        color:'#ffd166', icon:'🤝'},
+  {id:'followup',      label:'Follow-up',            color:'#7c6fff', icon:'🔄'},
+  {id:'proposal',      label:'Agreement Draft',      color:'#64b4ff', icon:'📄'},
+  {id:'signed',        label:'Agreement Signed ✓',  color:'#00e5b0', icon:'✅'},
+  {id:'active',        label:'Active Partner',       color:'#a8ff78', icon:'🚀'},
+  {id:'hold',          label:'On Hold',              color:'#888888', icon:'⏸️'},
+];
+
+function getDealStages(type){return type==='partner'?PARTNER_STAGES:CLIENT_STAGES;}
+
 let PEOPLE=[];
 let CLIENTS=[];
 
@@ -1162,6 +1188,23 @@ function load(){
       person.clientsByCompany={};
       person.potentialsByCompany={};
       person.clientData={};
+    });
+
+    // MIGRATION: link existing CLIENTS to People (safe — only adds, never removes)
+    CLIENTS.forEach(c=>{
+      (c.partnerIds||[]).forEach(pp=>{
+        const person=PEOPLE.find(p=>pidMatchesPerson(pp.pid,p));
+        if(!person)return;
+        if(!person.companies)person.companies=[];
+        if(!person.companies.includes(c.portfolioCo))person.companies.push(c.portfolioCo);
+      });
+      if(c.dealType==='partner'&&c.linkedPersonId){
+        const person=PEOPLE.find(p=>p.id===c.linkedPersonId);
+        if(person){
+          if(!person.companies)person.companies=[];
+          if(!person.companies.includes(c.portfolioCo))person.companies.push(c.portfolioCo);
+        }
+      }
     });
 
   }catch(e){
@@ -1508,6 +1551,16 @@ function addLinkedInMatch(mStr){
 // ============================================================
 // CLIENTS PAGE
 // ============================================================
+let _dealsTab='all';
+function setDealsTab(tab){
+  _dealsTab=tab;
+  ['all','client','partner'].forEach(t=>{
+    const btn=document.getElementById('deals-tab-'+t);
+    if(btn){btn.style.background=t===tab?'var(--accent)':'transparent';btn.style.color=t===tab?'#fff':'var(--muted)';}
+  });
+  renderClientsPage();
+}
+
 function renderClientsPage(){
   const q=(document.getElementById('cl-search')||{}).value||'';
   const coF=(document.getElementById('cl-co-filter')||{}).value||'';
@@ -1517,7 +1570,8 @@ function renderClientsPage(){
     const qOk=!q||[c.name,c.company,c.sector||''].some(s=>s&&s.toLowerCase().includes(q.toLowerCase()));
     const coOk=!coF||c.portfolioCo===coF;
     const stOk=!stF||c.stage===stF;
-    return qOk&&coOk&&stOk;
+    const typeOk=_dealsTab==='all'||(c.dealType||'client')===_dealsTab;
+    return qOk&&coOk&&stOk&&typeOk;
   });
 
   const container=document.getElementById('clients-list');
@@ -1525,15 +1579,15 @@ function renderClientsPage(){
 
   if(!list.length){
     container.innerHTML=`<div style="text-align:center;padding:60px;color:var(--muted);">
-      No clients yet — click <strong>+ Add Client</strong> to add one
+      No deals yet — click <strong>+ Add Deal</strong> to add one
     </div>`;
     return;
   }
 
   // Group by stage
-  const signed=list.filter(c=>c.stage==='contract');
+  const signed=list.filter(c=>c.stage==='contract'||c.stage==='signed'||c.stage==='active');
   const onHold=list.filter(c=>c.stage==='hold');
-  const pipeline=list.filter(c=>c.stage!=='contract'&&c.stage!=='hold');
+  const pipeline=list.filter(c=>!['contract','signed','active','hold'].includes(c.stage));
 
   container.innerHTML=`
     ${signed.length?`
@@ -1556,7 +1610,9 @@ function renderClientsPage(){
 function clientRow(c){
   const coData=COMPANIES.find(x=>x.name===c.portfolioCo);
   const coColor=coData?coData.color:'var(--accent)';
-  const stageDef=CLIENT_STAGES.find(s=>s.id===c.stage)||CLIENT_STAGES[0];
+  const stages=getDealStages(c.dealType||'client');
+  const stageDef=stages.find(s=>s.id===c.stage)||stages[0];
+  const isPartner=(c.dealType||'client')==='partner';
   const partners=(c.partnerIds||[]).map(pp=>{
     const name=resolvePartnerName(pp.pid);
     return`<span style="font-size:10px;background:rgba(124,111,255,0.1);border:1px solid rgba(124,111,255,0.2);color:var(--accent);padding:1px 7px;border-radius:10px;">${name} ${pp.pct?pp.pct+'%':''}</span>`;
@@ -1571,6 +1627,7 @@ function clientRow(c){
     <div style="flex:1;min-width:0;cursor:pointer;" onclick="openClientModal(${c.id})">
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:4px;">
         <span style="font-size:14px;font-weight:700;">${c.name}</span>
+        ${isPartner?`<span style="font-size:10px;background:rgba(0,229,176,0.1);border:1px solid rgba(0,229,176,0.2);color:#00e5b0;padding:1px 7px;border-radius:8px;">🤝 Partner</span>`:`<span style="font-size:10px;background:rgba(255,209,102,0.1);border:1px solid rgba(255,209,102,0.2);color:var(--yellow);padding:1px 7px;border-radius:8px;">💰 Client</span>`}
         ${c.sector?`<span style="font-size:10px;color:var(--muted);background:var(--surf2);padding:2px 8px;border-radius:8px;">${c.sector}</span>`:''}
         <span style="padding:2px 9px;border-radius:12px;font-size:10px;font-weight:700;border:1px solid ${coColor};color:${coColor};">${c.portfolioCo}</span>
       </div>
@@ -1582,7 +1639,7 @@ function clientRow(c){
     </div>
     <div style="text-align:right;flex-shrink:0;display:flex;align-items:center;gap:10px;">
       <div onclick="openClientModal(${c.id})" style="cursor:pointer;">
-        ${c.payment>0?`<div style="font-size:18px;font-weight:800;color:${c.stage==='contract'?'#00e5b0':'var(--accent)'};">$${c.payment.toLocaleString()}</div><div style="font-size:10px;color:var(--muted);">/month</div>`:'<div style="font-size:12px;color:var(--muted2);">—</div>'}
+        ${!isPartner&&c.payment>0?`<div style="font-size:18px;font-weight:800;color:${['contract','signed','active'].includes(c.stage)?'#00e5b0':'var(--accent)'};">$${c.payment.toLocaleString()}</div><div style="font-size:10px;color:var(--muted);">/month</div>`:'<div style="font-size:12px;color:var(--muted2);">—</div>'}
       </div>
       <div style="display:flex;flex-direction:column;gap:4px;">
         <button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();openClientModal(${c.id})" title="Edit">✏️</button>
@@ -1597,20 +1654,33 @@ function openAddClient(){
   const partnerOptions=`<option value="">+ Add partner…</option><option value="omer">Omer / Tailwind</option>${PEOPLE.filter(p=>p.type==='partner'||p.type==='referrer').map(p=>`<option value="${p.id}">${p.name}</option>`).join('')}`;
 
   document.getElementById('modal-body').innerHTML=`
-    <div class="modal-title" style="margin-bottom:16px;">➕ Add Client</div>
+    <div class="modal-title" style="margin-bottom:16px;">➕ Add Deal</div>
+
+    <!-- Deal Type -->
+    <div style="display:flex;gap:8px;margin-bottom:16px;">
+      <button id="dtype-client" onclick="setDealTypeForm('client')"
+        style="flex:1;padding:10px;border-radius:10px;border:2px solid var(--accent);background:rgba(124,111,255,0.1);color:var(--accent);cursor:pointer;font-size:13px;font-weight:600;">
+        💰 לקוח
+      </button>
+      <button id="dtype-partner" onclick="setDealTypeForm('partner')"
+        style="flex:1;padding:10px;border-radius:10px;border:2px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-size:13px;font-weight:600;">
+        🤝 פרטנר / מפיץ
+      </button>
+    </div>
+
     <div class="form-row">
-      <div class="field"><label>Client Company Name *</label><input id="nc-name" placeholder="e.g. Telefonica Brazil" style="margin:0;"/></div>
+      <div class="field"><label id="nc-name-label">Company Name *</label><input id="nc-name" placeholder="e.g. Telefonica Brazil" style="margin:0;"/></div>
       <div class="field"><label>Sector / Industry</label><input id="nc-sector" placeholder="e.g. Telecom, Fintech…" style="margin:0;"/></div>
     </div>
     <div class="form-row">
       <div class="field"><label>Portfolio Company *</label><select id="nc-co" style="margin:0;"><option value="">— Select —</option>${coOptions}</select></div>
-      <div class="field"><label>Deal Stage</label>
+      <div class="field"><label>Stage</label>
         <select id="nc-stage" style="margin:0;">
           ${CLIENT_STAGES.map(s=>`<option value="${s.id}">${s.icon} ${s.label}</option>`).join('')}
         </select>
       </div>
     </div>
-    <div class="form-row">
+    <div class="form-row" id="nc-payment-row">
       <div class="field"><label>Monthly Payment $</label><input id="nc-payment" type="number" placeholder="0" style="margin:0;"/></div>
     </div>
 
@@ -1707,26 +1777,99 @@ function addNewClientContact(){
   list.innerHTML+=`<div style="font-size:12px;padding:4px 8px;background:var(--surf2);border-radius:6px;margin-bottom:4px;">${name}${role?' · '+role:''}${email?' · '+email:''}</div>`;
 }
 
+let _currentDealType='client';
+
+function setDealTypeForm(type){
+  _currentDealType=type;
+  const isPartner=type==='partner';
+  // Update buttons
+  document.getElementById('dtype-client').style.border=isPartner?'2px solid var(--border)':'2px solid var(--accent)';
+  document.getElementById('dtype-client').style.background=isPartner?'transparent':'rgba(124,111,255,0.1)';
+  document.getElementById('dtype-client').style.color=isPartner?'var(--muted)':'var(--accent)';
+  document.getElementById('dtype-partner').style.border=isPartner?'2px solid #00e5b0':'2px solid var(--border)';
+  document.getElementById('dtype-partner').style.background=isPartner?'rgba(0,229,176,0.1)':'transparent';
+  document.getElementById('dtype-partner').style.color=isPartner?'#00e5b0':'var(--muted)';
+  // Update stage options
+  const stages=isPartner?PARTNER_STAGES:CLIENT_STAGES;
+  const sel=document.getElementById('nc-stage');
+  if(sel)sel.innerHTML=stages.map(s=>`<option value="${s.id}">${s.icon} ${s.label}</option>`).join('');
+  // Hide payment for partners
+  const payRow=document.getElementById('nc-payment-row');
+  if(payRow)payRow.style.display=isPartner?'none':'flex';
+  // Update label
+  const lbl=document.getElementById('nc-name-label');
+  if(lbl)lbl.textContent=isPartner?'Partner / Distributor Name *':'Client Company Name *';
+}
+
 function saveNewClient(){
   const name=document.getElementById('nc-name').value.trim();
   const co=document.getElementById('nc-co').value;
   if(!name||!co){notif('Name and Portfolio Company required');return;}
+
+  const dealType=_currentDealType||'client';
+
   // Add contacts to People
   (window._newClientContacts||[]).forEach(ct=>addContactToPeople(ct,name,co));
+
   const client={
     id:nextClientId++,
     name,
     portfolioCo:co,
+    dealType,
     sector:document.getElementById('nc-sector').value.trim(),
     stage:document.getElementById('nc-stage').value||'email_sent',
-    payment:parseFloat(document.getElementById('nc-payment').value)||0,
+    payment:dealType==='partner'?0:(parseFloat(document.getElementById('nc-payment')?.value)||0),
     partnerIds:window._newClientPartners||[],
     contacts:window._newClientContacts||[],
     notes:document.getElementById('nc-notes').value.trim(),
     createdAt:Date.now()
   };
+
+  // If deal type is "partner" — auto-create or link in People
+  if(dealType==='partner'){
+    const existing=PEOPLE.find(p=>p.name.toLowerCase()===name.toLowerCase());
+    if(!existing){
+      // Create new person in People
+      const newPerson={
+        id:nextId++,name,type:'partner',
+        role:client.sector||'Partner',
+        company:name,geo:'',
+        companies:[co],
+        strength:3,status:'initial',
+        parentId:null,dualRole:null,
+        companyStatus:{[co]:client.stage},
+        clientsByCompany:{},potentialsByCompany:{},
+        clientData:{},commissions:{},
+        notes:`Auto-created from Deal: ${name}`
+      };
+      PEOPLE.push(newPerson);
+      // Link deal to this person
+      client.linkedPersonId=newPerson.id;
+      notif(`${name} נוסף גם ל-People ✓`);
+    } else {
+      // Link to existing person
+      client.linkedPersonId=existing.id;
+      // Add company to their list if not there
+      if(!existing.companies)existing.companies=[];
+      if(!existing.companies.includes(co))existing.companies.push(co);
+      if(!existing.companyStatus)existing.companyStatus={};
+      existing.companyStatus[co]=client.stage;
+    }
+  }
+
+  // If deal type is "client" — link to partner in People bidirectionally
+  if(dealType==='client'){
+    (client.partnerIds||[]).forEach(pp=>{
+      const person=PEOPLE.find(p=>pidMatchesPerson(pp.pid,p));
+      if(person){
+        if(!person.companies)person.companies=[];
+        if(!person.companies.includes(co))person.companies.push(co);
+      }
+    });
+  }
+
   CLIENTS.push(client);
-  save();renderClientsPage();renderRevenue();renderDash();
+  save();renderClientsPage();renderRevenue();renderDash();renderPeople();
   closeOverlay('main-overlay');
   notif(`${name} added ✓`);
 }
@@ -1735,14 +1878,16 @@ function openClientModal(id){
   const c=CLIENTS.find(x=>x.id===id);if(!c)return;
   const coData=COMPANIES.find(x=>x.name===c.portfolioCo);
   const coColor=coData?coData.color:'var(--accent)';
-  const stageDef=CLIENT_STAGES.find(s=>s.id===c.stage)||CLIENT_STAGES[0];
+  const isPartner=(c.dealType||'client')==='partner';
+  const stageDef=getDealStages(c.dealType||'client').find(s=>s.id===c.stage)||CLIENT_STAGES[0];
   const partnerOptions=`<option value="">+ Add partner…</option><option value="omer">Omer / Tailwind</option>${PEOPLE.filter(p=>p.type==='partner'||p.type==='referrer').map(p=>`<option value="${p.id}">${p.name}</option>`).join('')}`;
 
   document.getElementById('modal-body').innerHTML=`
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
       <div style="width:4px;height:24px;border-radius:2px;background:${coColor};"></div>
       <div class="modal-title" style="margin:0;">${c.name}</div>
-      ${c.sector?`<span style="font-size:11px;color:var(--muted);background:var(--surf2);padding:2px 8px;border-radius:8px;">${c.sector}</span>`:''}
+      <span style="font-size:10px;padding:2px 8px;border-radius:8px;${isPartner?'background:rgba(0,229,176,0.1);color:#00e5b0;border:1px solid rgba(0,229,176,0.2);':'background:rgba(255,209,102,0.1);color:var(--yellow);border:1px solid rgba(255,209,102,0.2);'}">${isPartner?'🤝 Partner':'💰 Client'}</span>
+      ${c.linkedPersonId?`<button class="btn btn-ghost btn-xs" onclick="closeOverlay('main-overlay');setTimeout(()=>openPersonModal(${c.linkedPersonId}),120)">👤 פרופיל</button>`:''}
     </div>
     <div style="font-size:12px;color:var(--muted);margin-bottom:16px;">${c.portfolioCo}</div>
 
@@ -1750,7 +1895,7 @@ function openClientModal(id){
     <div class="msec">
       <div class="msec-title">Deal Stage</div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
-        ${CLIENT_STAGES.filter(s=>s.id!=='hold').map(s=>`<div onclick="setClientEntityStage(${id},'${s.id}')"
+        ${getDealStages(c.dealType||'client').filter(s=>s.id!=='hold').map(s=>`<div onclick="setClientEntityStage(${id},'${s.id}')"
           style="padding:6px 12px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;
             border:1px solid ${c.stage===s.id?s.color:'var(--border2)'};
             background:${c.stage===s.id?'rgba(0,0,0,0.25)':'transparent'};
@@ -2502,7 +2647,13 @@ function renderCoPanel(p,co,i){
   const coColor=coData?coData.color:'var(--accent)';
 
   // Pull clients from CLIENTS store using name-based matching
-  const allClients=CLIENTS.filter(c=>c.portfolioCo===co&&(c.partnerIds||[]).some(pp=>pidMatchesPerson(pp.pid,p)));
+  // Pull all deals for this person — both client deals (via partnerIds) and partner deals (via linkedPersonId)
+  const allClients=CLIENTS.filter(c=>
+    c.portfolioCo===co&&(
+      (c.partnerIds||[]).some(pp=>pidMatchesPerson(pp.pid,p))||
+      c.linkedPersonId===p.id
+    )
+  );
   const signedClients=allClients.filter(c=>c.stage==='contract');
   const prospects=allClients.filter(c=>c.stage!=='contract');
   const totalMonthly=signedClients.reduce((s,c)=>s+(c.payment||0),0);
