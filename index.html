@@ -342,7 +342,20 @@ hr{border:none;border-top:1px solid var(--border);margin:16px 0;}
       <div class="field"><label>Company / Organization</label><input id="ap-company" placeholder="Company"/></div>
     </div>
     <div class="form-row">
-      <div class="field"><label>Geography</label><input id="ap-geo" placeholder="e.g. Brazil, USA"/></div>
+      <div class="field"><label>Service Type</label>
+      <div style="display:flex;gap:8px;margin-top:4px;">
+        <div onclick="document.querySelectorAll('.stype-pill').forEach(p=>{p.dataset.active='0';p.style.background='var(--surf2)';p.style.color='var(--muted)';p.style.borderColor='var(--border)'});this.dataset.active='1';this.style.background='rgba(124,111,255,0.15)';this.style.color='var(--accent)';this.style.borderColor='rgba(124,111,255,0.4)'"
+          class="stype-pill" data-stype="bd" data-active="1"
+          style="padding:5px 14px;border-radius:20px;font-size:11px;cursor:pointer;border:1px solid rgba(124,111,255,0.4);background:rgba(124,111,255,0.15);color:var(--accent);">🎯 BD Only</div>
+        <div onclick="document.querySelectorAll('.stype-pill').forEach(p=>{p.dataset.active='0';p.style.background='var(--surf2)';p.style.color='var(--muted)';p.style.borderColor='var(--border)'});this.dataset.active='1';this.style.background='rgba(0,229,176,0.15)';this.style.color='var(--green)';this.style.borderColor='rgba(0,229,176,0.4)'"
+          class="stype-pill" data-stype="fundraising" data-active="0"
+          style="padding:5px 14px;border-radius:20px;font-size:11px;cursor:pointer;border:1px solid var(--border);background:var(--surf2);color:var(--muted);">💰 Fundraising</div>
+        <div onclick="document.querySelectorAll('.stype-pill').forEach(p=>{p.dataset.active='0';p.style.background='var(--surf2)';p.style.color='var(--muted)';p.style.borderColor='var(--border)'});this.dataset.active='1';this.style.background='rgba(255,209,102,0.15)';this.style.color='var(--yellow)';this.style.borderColor='rgba(255,209,102,0.4)'"
+          class="stype-pill" data-stype="both" data-active="0"
+          style="padding:5px 14px;border-radius:20px;font-size:11px;cursor:pointer;border:1px solid var(--border);background:var(--surf2);color:var(--muted);">🔄 Both</div>
+      </div>
+    </div>
+    <div class="field"><label>Geography</label><input id="ap-geo" placeholder="e.g. Brazil, USA"/></div>
       <div class="field"><label>Parent Partner (for sub-partner)</label>
         <select id="ap-parent"><option value="">— None —</option></select>
       </div>
@@ -1789,6 +1802,56 @@ function renderRevenue(){
       <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--accent);margin:${signedDeals.length?'20px':'0'} 0 10px;">🎯 Pipeline (${pipelineDeals.length})</div>
       ${pipelineDeals.map(d=>revenueRow(d)).join('')}`:''}
     ${!deals.length?`<div style="text-align:center;padding:60px;color:var(--muted);">No deals yet — add clients in the <strong>Clients</strong> page and assign your % to see revenue here.</div>`:''}
+
+    ${(()=>{
+      // Fundraising deals
+      const omerName = 'Omer / Tailwind';
+      const frDeals = [];
+      COMPANIES.forEach(co=>{
+        (co.fundraisingDeals||[]).forEach(d=>{
+          const myFinder = (d.finders||[]).find(f=>f.name===omerName||f.name==='omer');
+          if(!myFinder) return;
+          const totalFee = d.targetAmount ? d.targetAmount * (d.finderFeePct||0) / 100 : 0;
+          const myFee = totalFee * (myFinder.pct||0) / 100;
+          const stage = FR_STAGES.find(s=>s.id===d.stage)||FR_STAGES[0];
+          frDeals.push({co, d, myFee, totalFee, stage, myFinder});
+        });
+      });
+      if(!frDeals.length) return '';
+      const totalFR = frDeals.filter(x=>x.d.stage==='closed').reduce((s,x)=>s+x.myFee,0);
+      return `
+        <div style="margin-top:28px;">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--green);margin-bottom:12px;">💰 Fundraising (${frDeals.length} rounds)</div>
+          ${frDeals.map(({co,d,myFee,totalFee,stage,myFinder})=>`
+            <div onclick="nav('companies');setTimeout(()=>openCompanyModal('${co.id}'),100)"
+              style="background:var(--surf);border:1px solid var(--border);border-radius:10px;
+                padding:14px 18px;margin-bottom:8px;display:flex;align-items:center;
+                justify-content:space-between;cursor:pointer;transition:all 0.1s;"
+              onmouseover="this.style.background='var(--surf2)'" onmouseout="this.style.background='var(--surf)'">
+              <div style="display:flex;align-items:center;gap:14px;flex:1;min-width:0;">
+                <div style="width:4px;height:44px;border-radius:3px;background:${co.color};flex-shrink:0;"></div>
+                <div>
+                  <div style="font-size:14px;font-weight:700;">${co.name} — ${d.roundName||'Round'}</div>
+                  <div style="font-size:11px;color:var(--muted);margin-top:3px;">
+                    Target: <span style="color:var(--text);font-weight:600;">$${(d.targetAmount||0).toLocaleString()}</span>
+                    · Fee: ${d.finderFeePct||0}%
+                    · My share: ${myFinder.pct||0}%
+                  </div>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:24px;flex-shrink:0;">
+                <span style="padding:3px 10px;border-radius:12px;font-size:10px;font-weight:700;
+                  border:1px solid ${stage.color};color:${stage.color};">${stage.label}</span>
+                <div style="text-align:right;min-width:90px;">
+                  <div style="font-size:10px;color:var(--muted);">My Finder's Fee</div>
+                  <div style="font-size:18px;font-weight:800;color:${d.stage==='closed'?'#00e5b0':'var(--accent)'};">
+                    ${myFee>0?'$'+myFee.toLocaleString():'—'}
+                  </div>
+                </div>
+              </div>
+            </div>`).join('')}
+        </div>`;
+    })()}
   `;
 }
 
@@ -1882,7 +1945,10 @@ function renderCompanies(){
     const allClients=people.flatMap(p=>(p.clientsByCompany&&p.clientsByCompany[co.name])||[]);
     return`<div class="co-card" onclick="openCompanyModal('${co.id}')">
       <div class="co-card-bar" style="background:${co.color}"></div>
-      <div class="co-name" style="color:${co.color}">${co.name}</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;">
+        <div class="co-name" style="color:${co.color}">${co.name}</div>
+        ${co.serviceType==='fundraising'?'<span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;background:rgba(0,229,176,0.12);border:1px solid rgba(0,229,176,0.3);color:var(--green);">💰 Fundraising</span>':co.serviceType==='both'?'<span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;background:rgba(255,209,102,0.12);border:1px solid rgba(255,209,102,0.3);color:var(--yellow);">🔄 BD + Raise</span>':'<span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;background:rgba(124,111,255,0.1);border:1px solid rgba(124,111,255,0.25);color:var(--accent);">🎯 BD</span>'}
+      </div>
       <div class="co-cat">${co.category}</div>
       <div class="co-desc">${co.desc}</div>
       <div style="margin-bottom:10px;">${people.slice(0,4).map(p=>`
@@ -1911,8 +1977,24 @@ function openCompanyModal(coId){
   document.getElementById('modal-body').innerHTML=`
     <div style="height:3px;background:${co.color};border-radius:2px;margin-bottom:16px;"></div>
     <div class="edit-hint">✏️ Click on כל Name כדי לערוך אותו ישירות</div>
-    <div class="modal-title" style="color:${co.color}">
-      <span class="editable" onclick="makeEditable(this,v=>{editCoField('${co.id}','name',v)})">${co.name}</span>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;">
+      <div class="modal-title" style="color:${co.color};margin:0;">
+        <span class="editable" onclick="makeEditable(this,v=>{editCoField('${co.id}','name',v)})">${co.name}</span>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center;">
+        ${['bd','fundraising','both'].map(t=>{
+          const labels={bd:'🎯 BD',fundraising:'💰 Fundraising',both:'🔄 Both'};
+          const colors={bd:'var(--accent)',fundraising:'var(--green)',both:'var(--yellow)'};
+          const bgs={bd:'rgba(124,111,255,0.12)',fundraising:'rgba(0,229,176,0.12)',both:'rgba(255,209,102,0.12)'};
+          const borders={bd:'rgba(124,111,255,0.3)',fundraising:'rgba(0,229,176,0.3)',both:'rgba(255,209,102,0.3)'};
+          const isCur=(co.serviceType||'bd')===t;
+          return`<span onclick="setCoServiceType('${co.id}','${t}')"
+            style="font-size:10px;font-weight:700;padding:3px 9px;border-radius:12px;cursor:pointer;
+              background:${isCur?bgs[t]:'transparent'};
+              border:1px solid ${isCur?borders[t]:'var(--border)'};
+              color:${isCur?colors[t]:'var(--muted)'};">${labels[t]}</span>`;
+        }).join('')}
+      </div>
     </div>
     <div class="modal-sub">${co.category}</div>
 
@@ -1991,6 +2073,16 @@ function openCompanyModal(coId){
           </div>`;}).join('')}
       </div>`:`<div style="font-size:12px;color:var(--muted);padding:8px 0;">No people assigned yet.</div>`}
     </div>
+
+    ${(co.serviceType==='fundraising'||co.serviceType==='both')?`
+    <hr/>
+    <div class="msec" id="fundraising-section-${co.id}">
+      <div class="msec-title" style="display:flex;justify-content:space-between;align-items:center;">
+        <span>💰 Fundraising Round</span>
+        <button class="btn btn-green btn-xs" onclick="openAddFundraisingDeal('${co.id}')">+ Add Round</button>
+      </div>
+      ${renderFundraisingDeals(co)}
+    </div>`:''}
 
     <div style="display:flex;gap:8px;">
       <button class="btn btn-ghost btn-sm" onclick="closeOverlay('main-overlay');nav('matching');setTimeout(()=>document.getElementById('m-co').value='${co.name}',80)">🎯 Matching</button>
@@ -3773,6 +3865,8 @@ function saveNewCompany(){
   const color = document.getElementById('nc-cocolor').value || '#7c6fff';
   const pct = parseFloat(document.getElementById('nc-copct').value) || 25;
 
+  const stypePill = [...document.querySelectorAll('.stype-pill')].find(p=>p.dataset.active==='1');
+  const serviceType = stypePill ? stypePill.dataset.stype : 'bd';
   const newCo = {
     id: name.toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,''),
     name,
@@ -3784,7 +3878,9 @@ function saveNewCompany(){
     investors: '—',
     clients: document.getElementById('nc-coclients').value.trim() || '—',
     geo: geo.length ? geo : ['Global'],
-    commissionPct: pct
+    commissionPct: pct,
+    serviceType,
+    fundraisingDeals: []
   };
 
   COMPANIES.push(newCo);
@@ -3819,6 +3915,170 @@ function _refreshCompanyDropdowns(name){
   // Also update COMPANY_PITCH and COMPANY_PERSONAS if needed (use defaults)
   if(!COMPANY_PITCH[name]) COMPANY_PITCH[name] = name + ' — a portfolio company of Tailwind Partners.';
   if(!COMPANY_PERSONAS[name]) COMPANY_PERSONAS[name] = 'CEO, COO, CMO, VP';
+}
+
+// ============================================================
+// SERVICE TYPE
+// ============================================================
+function setCoServiceType(coId, type){
+  const co = COMPANIES.find(c => c.id === coId);
+  if(!co) return;
+  co.serviceType = type;
+  if(!co.fundraisingDeals) co.fundraisingDeals = [];
+  save();
+  renderCompanies();
+  openCompanyModal(coId);
+  notif('Updated ✓');
+}
+
+// ============================================================
+// FUNDRAISING DEALS
+// ============================================================
+const FR_STAGES = [
+  {id:'targeting',  label:'Targeting',      color:'var(--muted)'},
+  {id:'discussion', label:'In Discussion',  color:'var(--yellow)'},
+  {id:'termsheet',  label:'Term Sheet',     color:'var(--accent)'},
+  {id:'closed',     label:'Closed ✓',       color:'var(--green)'},
+];
+
+function renderFundraisingDeals(co){
+  const deals = co.fundraisingDeals || [];
+  if(!deals.length) return `<div style="font-size:12px;color:var(--muted2);padding:6px 0;">No rounds yet — click + Add Round</div>`;
+  return deals.map((d,i) => {
+    const stage = FR_STAGES.find(s=>s.id===d.stage) || FR_STAGES[0];
+    const totalFee = d.targetAmount ? d.targetAmount * (d.finderFeePct||0) / 100 : 0;
+    const finders = d.finders || [];
+    return `
+    <div style="background:var(--surf2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <div>
+          <span style="font-size:14px;font-weight:700;">${d.roundName||'Round'}</span>
+          <span style="margin-left:10px;padding:3px 9px;border-radius:12px;font-size:10px;font-weight:700;
+            border:1px solid ${stage.color};color:${stage.color};">${stage.label}</span>
+        </div>
+        <button onclick="removeFundraisingDeal('${co.id}',${i})" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:16px;">×</button>
+      </div>
+
+      <!-- STAGE BUTTONS -->
+      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:12px;">
+        ${FR_STAGES.map(s=>`
+          <button onclick="setFRStage('${co.id}',${i},'${s.id}')"
+            style="padding:4px 10px;border-radius:12px;font-size:10px;font-weight:600;cursor:pointer;
+              border:1px solid ${d.stage===s.id?s.color:'var(--border)'};
+              background:${d.stage===s.id?s.color+'22':'transparent'};
+              color:${d.stage===s.id?s.color:'var(--muted)'};">${s.label}</button>
+        `).join('')}
+      </div>
+
+      <!-- AMOUNTS -->
+      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px;">
+        <div style="flex:1;min-width:120px;">
+          <div style="font-size:10px;color:var(--muted);margin-bottom:4px;">Target Raise ($)</div>
+          <input type="number" value="${d.targetAmount||''}" placeholder="e.g. 3000000"
+            style="margin:0;font-size:13px;"
+            onchange="updateFRField('${co.id}',${i},'targetAmount',parseFloat(this.value)||0)"/>
+        </div>
+        <div style="flex:1;min-width:100px;">
+          <div style="font-size:10px;color:var(--muted);margin-bottom:4px;">Finder's Fee %</div>
+          <input type="number" value="${d.finderFeePct||''}" placeholder="e.g. 3"
+            style="margin:0;font-size:13px;"
+            onchange="updateFRField('${co.id}',${i},'finderFeePct',parseFloat(this.value)||0)"/>
+        </div>
+        ${totalFee>0?`<div style="display:flex;align-items:flex-end;padding-bottom:2px;">
+          <div style="font-size:13px;font-weight:700;color:var(--green);">= $${totalFee.toLocaleString()}</div>
+        </div>`:''}
+      </div>
+
+      <!-- FINDERS -->
+      <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted2);margin-bottom:8px;">🤝 Finders</div>
+      <div id="fr-finders-${co.id}-${i}">
+        ${finders.length ? finders.map((f,fi)=>{
+          const myFee = totalFee * (f.pct||0) / 100;
+          return `<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:var(--surf3);border-radius:7px;margin-bottom:4px;font-size:12px;">
+            <span style="font-weight:500;">${f.name}</span>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <input type="number" value="${f.pct||''}" placeholder="%"
+                style="margin:0;width:55px;font-size:11px;padding:3px 6px;text-align:center;"
+                onchange="updateFinderPct('${co.id}',${i},${fi},this.value)"/>
+              <span style="font-size:10px;color:var(--muted);">%</span>
+              ${myFee>0?`<span style="font-size:11px;color:var(--accent);font-weight:600;min-width:70px;">$${myFee.toLocaleString()}</span>`:''}
+              <button onclick="removeFinder('${co.id}',${i},${fi})" style="background:none;border:1px solid var(--red);border-radius:5px;color:var(--red);cursor:pointer;padding:2px 6px;font-size:10px;">✕</button>
+            </div>
+          </div>`;
+        }).join('') : '<div style="font-size:11px;color:var(--muted2);margin-bottom:6px;">No finders yet</div>'}
+      </div>
+      <!-- Add Finder -->
+      <div style="display:flex;gap:8px;margin-top:8px;">
+        <select id="fr-finder-sel-${co.id}-${i}" style="margin:0;flex:1;font-size:12px;">
+          <option value="">+ Add Finder…</option>
+          <option value="omer">Omer / Tailwind</option>
+          ${PEOPLE.filter(p=>p.type==='partner'||p.type==='referrer').map(p=>`<option value="${p.name}">${p.name}</option>`).join('')}
+        </select>
+        <input type="number" id="fr-finder-pct-${co.id}-${i}" placeholder="%" style="margin:0;width:60px;"/>
+        <button class="btn btn-green btn-xs" onclick="addFinder('${co.id}',${i})">+ Add</button>
+      </div>
+
+      ${d.notes?`<div style="font-size:11px;color:var(--muted);margin-top:10px;padding-top:8px;border-top:1px solid var(--border);">${d.notes}</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function openAddFundraisingDeal(coId){
+  const co = COMPANIES.find(c=>c.id===coId); if(!co) return;
+  if(!co.fundraisingDeals) co.fundraisingDeals = [];
+  co.fundraisingDeals.push({
+    roundName: 'Seed Round',
+    stage: 'targeting',
+    targetAmount: 0,
+    finderFeePct: 3,
+    finders: [{name:'Omer / Tailwind', pct:100}],
+    notes: ''
+  });
+  save();
+  openCompanyModal(coId);
+}
+
+function removeFundraisingDeal(coId, idx){
+  const co = COMPANIES.find(c=>c.id===coId); if(!co) return;
+  co.fundraisingDeals.splice(idx, 1);
+  save(); openCompanyModal(coId);
+}
+
+function setFRStage(coId, idx, stage){
+  const co = COMPANIES.find(c=>c.id===coId); if(!co) return;
+  co.fundraisingDeals[idx].stage = stage;
+  save(); openCompanyModal(coId);
+  notif('Stage updated ✓');
+}
+
+function updateFRField(coId, idx, field, val){
+  const co = COMPANIES.find(c=>c.id===coId); if(!co) return;
+  co.fundraisingDeals[idx][field] = val;
+  save(); openCompanyModal(coId);
+}
+
+function addFinder(coId, idx){
+  const co = COMPANIES.find(c=>c.id===coId); if(!co) return;
+  const sel = document.getElementById(`fr-finder-sel-${coId}-${idx}`);
+  const pct = parseFloat(document.getElementById(`fr-finder-pct-${coId}-${idx}`).value)||0;
+  if(!sel.value) return;
+  if(!co.fundraisingDeals[idx].finders) co.fundraisingDeals[idx].finders = [];
+  co.fundraisingDeals[idx].finders.push({name: sel.value, pct});
+  save(); openCompanyModal(coId);
+  notif('Finder added ✓');
+}
+
+function updateFinderPct(coId, idx, fi, val){
+  const co = COMPANIES.find(c=>c.id===coId); if(!co) return;
+  co.fundraisingDeals[idx].finders[fi].pct = parseFloat(val)||0;
+  save(); renderRevenue();
+  notif('Updated ✓');
+}
+
+function removeFinder(coId, idx, fi){
+  const co = COMPANIES.find(c=>c.id===coId); if(!co) return;
+  co.fundraisingDeals[idx].finders.splice(fi, 1);
+  save(); openCompanyModal(coId);
 }
 </script>
 </body>
