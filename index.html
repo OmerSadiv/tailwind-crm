@@ -748,16 +748,59 @@ hr{border:none;border-top:1px solid var(--border);margin:16px 0;}
 </main>
 
 <!-- FLOATING AI ASSISTANT -->
-<!-- Claude Button — opens this conversation -->
-<div style="position:fixed;bottom:24px;right:24px;z-index:1000;">
-  <a href="https://claude.ai" target="_blank"
-    style="width:52px;height:52px;border-radius:50%;background:var(--accent);
-      box-shadow:0 4px 16px rgba(124,111,255,0.5);font-size:22px;
-      display:flex;align-items:center;justify-content:center;
-      text-decoration:none;transition:transform 0.2s;"
-    title="Open Claude to make changes"
-    onmouseover="this.style.transform='scale(1.1)'"
-    onmouseout="this.style.transform='scale(1)'">💬</a>
+<div id="float-btn" onclick="toggleFloatChat()" style="position:fixed;bottom:24px;right:24px;z-index:1000;
+  width:52px;height:52px;border-radius:50%;background:var(--accent);
+  box-shadow:0 4px 16px rgba(124,111,255,0.5);font-size:22px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;transition:transform 0.2s;"
+  onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">💬</div>
+
+<div id="float-chat-window" style="display:none;position:fixed;bottom:88px;right:24px;z-index:999;
+  width:400px;height:560px;background:var(--surf);border:1px solid var(--border2);
+  border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,0.5);flex-direction:column;overflow:hidden;"
+  ondragover="event.preventDefault();document.getElementById('float-drop-overlay').style.display='flex';"
+  ondragleave="document.getElementById('float-drop-overlay').style.display='none';"
+  ondrop="handleFloatDrop(event)">
+
+  <!-- Drop overlay -->
+  <div id="float-drop-overlay" style="display:none;position:absolute;inset:0;background:rgba(124,111,255,0.15);
+    border:2px dashed var(--accent);border-radius:16px;z-index:10;
+    align-items:center;justify-content:center;flex-direction:column;gap:8px;pointer-events:none;">
+    <div style="font-size:32px;">📸</div>
+    <div style="font-size:13px;font-weight:700;color:var(--accent);">שחרר תמונה כאן</div>
+    <div style="font-size:11px;color:var(--muted);">AI יזהה פרטי ההזדמנות אוטומטית</div>
+  </div>
+
+  <div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div style="font-size:13px;font-weight:700;">💬 AI Assistant</div>
+      <span style="font-size:9px;padding:2px 7px;border-radius:8px;background:rgba(0,229,176,0.1);border:1px solid rgba(0,229,176,0.2);color:var(--green);">LIVE</span>
+    </div>
+    <div style="display:flex;gap:6px;align-items:center;">
+      <button onclick="clearFloatChat()" title="נקה שיחה" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:13px;padding:2px;">🗑</button>
+      <button onclick="toggleFloatChat()" style="background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;line-height:1;">×</button>
+    </div>
+  </div>
+
+  <div id="float-messages" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;"></div>
+
+  <!-- Image preview strip -->
+  <div id="float-img-preview" style="display:none;padding:8px 12px;border-top:1px solid var(--border);background:var(--surf2);">
+    <div style="display:flex;align-items:center;gap:8px;">
+      <img id="float-img-thumb" style="width:48px;height:48px;object-fit:cover;border-radius:6px;border:1px solid var(--border2);" src=""/>
+      <div style="flex:1;font-size:11px;color:var(--muted);">תמונה מוכנה — לחץ ↑ לניתוח</div>
+      <button onclick="clearFloatImage()" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:16px;line-height:1;">×</button>
+    </div>
+  </div>
+
+  <div style="padding:10px 12px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:center;">
+    <label title="העלה תמונה / צילום מסך" style="cursor:pointer;color:var(--muted);font-size:20px;padding:4px;border-radius:6px;transition:color 0.12s;line-height:1;"
+      onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--muted)'">
+      📎<input type="file" id="float-img-input" accept="image/*" style="display:none;" onchange="handleFloatImageUpload(this)"/>
+    </label>
+    <input id="float-input" type="text" placeholder="שאל שאלה, הדבק טקסט, או גרור תמונה…"
+      style="flex:1;font-size:13px;" onkeydown="if(event.key==='Enter')sendFloatChat()"/>
+    <button onclick="sendFloatChat()" class="btn btn-primary btn-sm" style="padding:7px 14px;">↑</button>
+  </div>
 </div>
 <script>
 // ============================================================
@@ -3581,6 +3624,7 @@ function editCoWebsite(coId){
   openCompanyModal(coId);
 }
 let chatHistory=[];
+let _floatImageData=null; // base64 image pending send
 
 function toggleFloatChat(){
   const win=document.getElementById('float-chat-window');
@@ -3590,7 +3634,60 @@ function toggleFloatChat(){
   btn.textContent=isOpen?'💬':'×';
   if(!isOpen){
     setTimeout(()=>document.getElementById('float-input')?.focus(),100);
+    // Show welcome if empty
+    const msgs=document.getElementById('float-messages');
+    if(msgs&&!msgs.children.length){
+      addFloatMsg('שלום! אני יכול לעזור עם:\n• שאלות על ה-CRM\n• הוספת אנשי קשר\n• ניתוח הזדמנויות השקעה מתמונה\n\nגרור תמונה או לחץ 📎 להעלות צילום מסך','ai');
+    }
   }
+}
+
+function clearFloatChat(){
+  chatHistory=[];
+  const msgs=document.getElementById('float-messages');
+  if(msgs) msgs.innerHTML='';
+  clearFloatImage();
+  notif('שיחה נוקתה');
+}
+
+function clearFloatImage(){
+  _floatImageData=null;
+  const prev=document.getElementById('float-img-preview');
+  const thumb=document.getElementById('float-img-thumb');
+  if(prev) prev.style.display='none';
+  if(thumb) thumb.src='';
+  const inp=document.getElementById('float-img-input');
+  if(inp) inp.value='';
+}
+
+function handleFloatImageUpload(input){
+  const file=input.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    _floatImageData={base64:e.target.result.split(',')[1], mediaType:file.type||'image/jpeg'};
+    const thumb=document.getElementById('float-img-thumb');
+    const prev=document.getElementById('float-img-preview');
+    if(thumb) thumb.src=e.target.result;
+    if(prev) prev.style.display='block';
+    // Auto-prompt for investment detection
+    const inp=document.getElementById('float-input');
+    if(inp&&!inp.value.trim()) inp.value='נתח את ההזדמנות בתמונה';
+    inp.focus();
+  };
+  reader.readAsDataURL(file);
+}
+
+function handleFloatDrop(event){
+  event.preventDefault();
+  document.getElementById('float-drop-overlay').style.display='none';
+  const file=event.dataTransfer.files[0];
+  if(!file||!file.type.startsWith('image/')) return;
+  const input=document.getElementById('float-img-input');
+  // Simulate file input
+  const dt=new DataTransfer();
+  dt.items.add(file);
+  input.files=dt.files;
+  handleFloatImageUpload(input);
 }
 
 function addFloatMsg(text,type,id){
@@ -3606,19 +3703,41 @@ function addFloatMsg(text,type,id){
 
 async function sendFloatChat(){
   const input=document.getElementById('float-input');
-  const msg=input.value.trim();if(!msg)return;
+  const msg=input.value.trim();
+  if(!msg&&!_floatImageData) return;
   input.value='';
-  addFloatMsg(msg,'user');
-  chatHistory.push({role:'user',content:msg});
+
+  // Build user message content
+  let userContent;
+  if(_floatImageData){
+    userContent=[
+      {type:'image',source:{type:'base64',media_type:_floatImageData.mediaType,data:_floatImageData.base64}},
+      {type:'text',text:msg||'נתח את ההזדמנות בתמונה הזו ותזהה: שם חברה, סכום גיוס, שלב, תחום, ואיש קשר'}
+    ];
+    addFloatMsg('📸 ' + (msg||'נתח את התמונה'),'user');
+    clearFloatImage();
+  } else {
+    userContent=msg;
+    addFloatMsg(msg,'user');
+  }
+
+  chatHistory.push({role:'user',content:userContent});
   const loadId='fload-'+Date.now();
   addFloatMsg('…','ai loading',loadId);
+
   try{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,system:buildContext(),messages:chatHistory})
+    const res=await fetch(WORKER_URL,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:buildContext(),messages:chatHistory})
     });
-    const data=await res.json();
+    const rawText=await res.text();
+    if(!rawText||!rawText.trim()) throw new Error('Worker לא החזיר תשובה');
+    let data;
+    try{ data=JSON.parse(rawText); }catch(e){ throw new Error('תשובה לא תקינה: '+rawText.slice(0,200)); }
+    if(data.error) throw new Error(JSON.stringify(data.error));
     const reply=data.content.map(i=>i.text||'').join('').trim();
+    // Store text-only version in history
     chatHistory.push({role:'assistant',content:reply});
     const loadEl=document.getElementById(loadId);
     if(!loadEl)return;
@@ -3636,66 +3755,108 @@ async function sendFloatChat(){
     loadEl.classList.remove('loading');
   }catch(e){
     const loadEl=document.getElementById(loadId);
-    if(loadEl){loadEl.textContent='Error — please try again';loadEl.style.color='var(--red)';}
+    if(loadEl){
+      loadEl.textContent='❌ שגיאה: '+e.message;
+      loadEl.style.color='var(--red)';
+    }
+    console.error(e);
   }
 }
 
-// Keep sendChat for backward compat (now delegates to float)
+// Keep sendChat for backward compat
 function sendChat(){sendFloatChat();}
 
 function buildContext(){
   const companySummary=COMPANIES.map(co=>{
     const people=PEOPLE.filter(p=>p.companies&&p.companies.includes(co.name));
-    const clients=people.flatMap(p=>(p.clientsByCompany&&p.clientsByCompany[co.name])||[]);
-    return`${co.name} (${co.category}, ${co.commissionPct}% comm): partners=[${people.map(p=>p.name).join(', ')}], clients=[${clients.join(', ')}]`;
+    const frDeals=(co.fundraisingDeals||[]).map(d=>`${d.roundName}(${d.stage},$${(d.targetAmount||0).toLocaleString()})`).join(', ');
+    return`${co.name} (${co.category}, ${co.commissionPct}% comm, service:${co.serviceType||'bd'}${frDeals?' | raising:'+frDeals:''}): partners=[${people.map(p=>p.name).join(', ')}]`;
   }).join('\n');
+  const investorSummary=PEOPLE.filter(p=>p.type==='investor'||p.investorProfile).map(p=>`${p.name} | ${p.role} | ${p.company} | ${p.geo} | type:${p.investorProfile?.type||'Angel'} | ticket:${p.investorProfile?.ticketSize||'?'}`).join('\n');
   const peopleSummary=PEOPLE.map(p=>`id:${p.id} | ${p.name} | ${tl(p.type)} | ${p.role} | ${p.company} | ${p.geo} | status:${sl(p.status)} | companies:${(p.companies||[]).join(',')}`).join('\n');
   const companyNames=COMPANIES.map(c=>c.name).join(', ');
-  return`You are an AI assistant for Tailwind CRM (Omer Sadiv, Israeli BD firm).
+  return`You are an AI assistant for Tailwind CRM (Omer Sadiv, Israeli BD firm, ex-Pernod Ricard).
+Tailwind does TWO things: (1) BD — brings clients/partners to portfolio companies, (2) Fundraising — connects investors to portfolio companies and earns finder's fee.
 
 PORTFOLIO COMPANIES: ${companyNames}
-
 COMPANIES DETAIL:\n${companySummary}
-
+${investorSummary?`INVESTORS IN CRM:\n${investorSummary}\n`:''}
 PEOPLE IN CRM:\n${peopleSummary}
 
-INSTRUCTIONS:
-- If the user asks a question → answer it concisely in their language (Hebrew or English)
-- If the user wants to ADD something (person, client, lead) → respond ONLY with a JSON action object like this:
+INSTRUCTIONS — respond in the user's language (Hebrew or English):
+
+1. INVESTMENT OPPORTUNITY (image or text describing a company raising money):
+Detect: company name, sector, raise amount, stage, contact name/role.
+Respond ONLY with JSON:
+{
+  "action": "add_fundraising_opportunity",
+  "companyName": "...",
+  "category": "...",
+  "stage": "Seed|Series A|Series B|Growth",
+  "targetAmount": 000000,
+  "sector": "...",
+  "website": "...",
+  "contactName": "...",
+  "contactRole": "...",
+  "contactCompany": "...",
+  "notes": "..."
+}
+
+2. ADD PERSON:
 {
   "action": "add_person",
-  "name": "Full Name",
-  "type": "partner|sub|referrer|contact|client",
-  "role": "their title",
-  "company": "their company",
-  "geo": "country/region",
-  "companies": ["Portfolio Company Name"],
-  "status": "initial|followup|signed|prospects|hold",
-  "notes": "context"
+  "name": "...", "type": "partner|referrer|contact|investor",
+  "role": "...", "company": "...", "geo": "...",
+  "companies": [], "status": "initial",
+  "investorType": "Angel|VC|Family Office|Corporate",
+  "ticketSize": "...",
+  "notes": "..."
 }
-- If the user wants to UPDATE a status → respond ONLY with:
-{
-  "action": "update_status",
-  "personId": <id number>,
-  "personName": "name",
-  "newStatus": "initial|followup|signed|prospects|hold"
-}
-- If the user wants to ADD A CLIENT to a partner/company → respond ONLY with:
-{
-  "action": "add_client",
-  "personId": <id>,
-  "personName": "name",
-  "company": "Portfolio Company",
-  "clientName": "client name",
-  "clientType": "potential|signed"
-}
-IMPORTANT: For actions, return ONLY the JSON with no other text. For questions, return only text with no JSON.`;
+
+3. UPDATE STATUS:
+{"action":"update_status","personId":0,"personName":"...","newStatus":"initial|followup|signed|prospects|hold"}
+
+4. ADD CLIENT:
+{"action":"add_client","personId":0,"personName":"...","company":"Portfolio Co","clientName":"...","clientType":"potential|signed"}
+
+5. QUESTION → answer in plain text, no JSON.
+
+IMPORTANT: For actions return ONLY the JSON. For questions return only text.`;
 }
 
 
 function buildActionCard(action){
   const wrap=document.createElement('div');
-  if(action.action==='add_person'){
+  if(action.action==='add_fundraising_opportunity'){
+    const amt=action.targetAmount?'$'+(action.targetAmount/1000000).toFixed(1)+'M':'—';
+    wrap.innerHTML=`
+      <div class="action-card" style="border-color:var(--green);">
+        <div class="action-card-title" style="color:var(--green);">💰 הזדמנות השקעה — אשר?</div>
+        <div class="action-field"><span class="action-field-label">חברה</span><span class="action-field-value" style="color:var(--green);font-weight:700;">${action.companyName||'—'}</span></div>
+        <div class="action-field"><span class="action-field-label">תחום</span><span class="action-field-value">${action.category||action.sector||'—'}</span></div>
+        <div class="action-field"><span class="action-field-label">שלב</span><span class="action-field-value">${action.stage||'—'}</span></div>
+        <div class="action-field"><span class="action-field-label">גיוס</span><span class="action-field-value" style="color:var(--green);">${amt}</span></div>
+        ${action.contactName?`<div class="action-field"><span class="action-field-label">איש קשר</span><span class="action-field-value">${action.contactName}${action.contactRole?' · '+action.contactRole:''}</span></div>`:''}
+        ${action.website?`<div class="action-field"><span class="action-field-label">אתר</span><span class="action-field-value">${action.website}</span></div>`:''}
+        ${action.notes?`<div class="action-field"><span class="action-field-label">הערות</span><span class="action-field-value">${action.notes}</span></div>`:''}
+        <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);">
+          <div style="font-size:10px;color:var(--muted);margin-bottom:8px;">Finder's Fee Split:</div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <input id="fr-finder2-name" placeholder="שותף finder (אופציונלי)" style="margin:0;flex:1;min-width:140px;font-size:12px;"/>
+            <input id="fr-finder2-pct" type="number" placeholder="% שותף" style="margin:0;width:65px;font-size:12px;"/>
+            <span style="font-size:11px;color:var(--muted);">Omer = השאר</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:8px;">
+            <input id="fr-fee-pct" type="number" placeholder="Finder's Fee % (e.g. 3)" value="3" style="margin:0;width:80px;font-size:12px;"/>
+            <span style="font-size:11px;color:var(--muted);">% מהגיוס</span>
+          </div>
+        </div>
+        <div class="action-btns" style="margin-top:12px;">
+          <button class="btn btn-primary btn-sm" style="background:var(--green);border-color:var(--green);" onclick="confirmAction(${JSON.stringify(action).replace(/"/g,'&quot;')})">✓ הוסף לCRM</button>
+          <button class="btn btn-ghost btn-sm" onclick="this.closest('.action-card').innerHTML='<span style=color:var(--muted)>בוטל</span>'">✕ בטל</button>
+        </div>
+      </div>`;
+  } else if(action.action==='add_person'){
     wrap.innerHTML=`
       <div class="action-card">
         <div class="action-card-title">➕ Add to CRM — confirm?</div>
@@ -3706,6 +3867,8 @@ function buildActionCard(action){
         <div class="action-field"><span class="action-field-label">Location</span><span class="action-field-value">${action.geo||'—'}</span></div>
         <div class="action-field"><span class="action-field-label">For</span><span class="action-field-value">${(action.companies||[]).join(', ')||'—'}</span></div>
         <div class="action-field"><span class="action-field-label">Status</span><span class="action-field-value">${sl(action.status||'initial')}</span></div>
+        ${action.investorType?`<div class="action-field"><span class="action-field-label">Investor Type</span><span class="action-field-value">${action.investorType}</span></div>`:''}
+        ${action.ticketSize?`<div class="action-field"><span class="action-field-label">Ticket Size</span><span class="action-field-value">${action.ticketSize}</span></div>`:''}
         ${action.notes?`<div class="action-field"><span class="action-field-label">Notes</span><span class="action-field-value">${action.notes}</span></div>`:''}
         <div class="action-btns">
           <button class="btn btn-primary btn-sm" onclick="confirmAction(${JSON.stringify(action).replace(/"/g,'&quot;')})">✓ Confirm — Add</button>
@@ -3783,6 +3946,77 @@ function confirmAction(actionStr){
     save();renderClientsPage();renderDash();
     addChatMsg(`✓ ${action.clientName} added to ${co}`,'ai');
     notif(`${action.clientName} added ✓`);
+  } else if(action.action==='add_fundraising_opportunity'){
+    const coName=action.companyName||'Unknown Company';
+    // Get finder info from card inputs
+    const finderName=document.getElementById('fr-finder2-name')?.value.trim()||'';
+    const finderPct=parseFloat(document.getElementById('fr-finder2-pct')?.value)||0;
+    const feePct=parseFloat(document.getElementById('fr-fee-pct')?.value)||3;
+    const omerPct=finderName&&finderPct?100-finderPct:100;
+
+    const finders=[{name:'Omer / Tailwind',pct:omerPct}];
+    if(finderName&&finderPct) finders.push({name:finderName,pct:finderPct});
+
+    // Check if company exists
+    let co=COMPANIES.find(c=>c.name.toLowerCase()===coName.toLowerCase());
+    if(!co){
+      // Create new company
+      co={
+        id:coName.toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,''),
+        name:coName,
+        category:action.category||action.sector||'Tech',
+        color:'#00e5b0',
+        website:action.website||'',
+        desc:action.notes||'',
+        raised:'—',investors:'—',clients:'—',
+        geo:['Global'],
+        commissionPct:0,
+        serviceType:'fundraising',
+        fundraisingDeals:[]
+      };
+      COMPANIES.push(co);
+    } else {
+      if(!co.fundraisingDeals) co.fundraisingDeals=[];
+      if(co.serviceType!=='fundraising'&&co.serviceType!=='both') co.serviceType='both';
+    }
+
+    // Add fundraising deal
+    co.fundraisingDeals.push({
+      roundName:action.stage||'Round',
+      stage:'discussion',
+      targetAmount:action.targetAmount||0,
+      finderFeePct:feePct,
+      finders,
+      notes:action.notes||''
+    });
+
+    // Add contact if provided
+    if(action.contactName){
+      const exists=PEOPLE.find(p=>p.name.toLowerCase()===action.contactName.toLowerCase());
+      if(!exists){
+        PEOPLE.push({
+          id:nextId++,
+          name:action.contactName,
+          type:'contact',
+          role:action.contactRole||'',
+          company:coName,
+          geo:'',
+          companies:[coName],
+          strength:3,
+          status:'initial',
+          parentId:null,dualRole:null,
+          companyStatus:{},clientsByCompany:{},potentialsByCompany:{},
+          clientData:{},commissions:{},
+          notes:'Added via AI from fundraising opportunity'
+        });
+      }
+    }
+
+    save();renderCompanies();renderDash();
+    addChatMsg(`✓ ${coName} נוסף — סבב גיוס $${(action.targetAmount||0).toLocaleString()} עם finder's fee ${feePct}%`,'ai');
+    notif(`${coName} נוסף לCRM ✓`);
+    // Open company modal
+    setTimeout(()=>{nav('companies');setTimeout(()=>openCompanyModal(co.id),200);},300);
   }
 
   // Replace card with success
