@@ -277,6 +277,7 @@ hr{border:none;border-top:1px solid var(--border);margin:16px 0;}
     Tailwind · Omer Sadiv
     <div id="last-saved"></div>
     <button class="reset-btn" style="background:rgba(0,229,176,0.1);color:var(--green);border-color:rgba(0,229,176,0.25);margin-bottom:4px;" onclick="smartUpdate()">🔄 Sync</button>
+    <button class="reset-btn" style="background:rgba(124,111,255,0.1);color:var(--accent);border-color:rgba(124,111,255,0.25);margin-bottom:4px;" onclick="runAISync()">🪄 AI Sync (עדכן הכל)</button>
     <button id="gdrive-btn" class="reset-btn" style="margin-bottom:4px;color:var(--muted);" onclick="connectGoogleDrive()">☁️ Connect Drive</button>
     <button class="reset-btn" style="opacity:0.4;font-size:8px;margin-top:2px;" onclick="backupData()" title="Backup">↓ Backup &nbsp;|&nbsp; <span onclick="event.stopPropagation();document.getElementById('restore-input').click()">↑ Restore</span></button>
     <input type="file" id="restore-input" accept=".json" style="display:none;" onchange="restoreData(this)"/>
@@ -1050,9 +1051,15 @@ function load(){
       d.companies.forEach(saved=>{
         const idx=COMPANIES.findIndex(c=>c.id===saved.id);
         if(idx!==-1){
-          ['name','desc','website','commissionPct','raised','investors'].forEach(f=>{
+          // Restore ALL saved fields (not just a whitelist) so category, clients,
+          // geo, color, serviceType, suggestedLeads, lastSynced etc. survive reload
+          Object.keys(saved).forEach(f=>{
             if(saved[f]!==undefined)COMPANIES[idx][f]=saved[f];
           });
+        } else {
+          // Company added by the user (not one of the hardcoded defaults) —
+          // it doesn't exist in COMPANIES yet, so add it back fully or it's lost
+          COMPANIES.push(dc(saved));
         }
       });
     }
@@ -1179,6 +1186,114 @@ function smartUpdate(){
 }
 
 function notif(msg){const n=document.getElementById('notif');n.textContent=msg;n.classList.add('show');setTimeout(()=>n.classList.remove('show'),2200);}
+
+// ============================================================
+// AI SYNC — refreshes every company's info (desc/raised/category/
+// key clients) via web + suggests 3-5 potential clients per company
+// from the internal network (PEOPLE + LinkedIn matches)
+// ============================================================
+async function runAISync(){
+  if(!confirm(`להריץ AI Sync על כל ${COMPANIES.length} החברות? זה ישלח קריאה ל-AI (עם חיפוש אינטרנט) לכל חברה ויכול לקחת כמה דקות.`))return;
+
+  document.getElementById('modal-body').innerHTML=`
+    <div class="modal-title" style="margin-bottom:4px;">🪄 AI Sync</div>
+    <div class="modal-sub" style="margin-bottom:14px;">מעדכן מידע על כל חברה + מציע לקוחות פוטנציאליים מהרשת</div>
+    <div id="aisync-list"></div>`;
+  document.getElementById('main-overlay').classList.add('open');
+
+  const listEl=document.getElementById('aisync-list');
+  const rowEl={};
+  COMPANIES.forEach(co=>{
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--surf2);border:1px solid var(--border);border-radius:8px;margin-bottom:6px;font-size:12px;';
+    row.innerHTML=`<span>${co.name}</span><span id="aisync-status-${co.id}" style="color:var(--muted);">ממתין…</span>`;
+    listEl.appendChild(row);
+    rowEl[co.id]=row;
+  });
+
+  const peopleSummary=PEOPLE.filter(p=>p.id!==0).map(p=>
+    `${p.name} | ${p.type} | ${p.role} | ${p.company} | ${p.geo}`
+  ).join('\n');
+
+  let okCount=0,errCount=0;
+
+  for(const co of COMPANIES){
+    const statusEl=document.getElementById(`aisync-status-${co.id}`);
+    if(statusEl){statusEl.textContent='🔄 מעדכן…';statusEl.style.color='var(--accent)';}
+    try{
+      const sys=`You are a BD research assistant for Tailwind Partners (Omer Sadiv, Israeli BD firm).
+TASK 1 — REFRESH COMPANY INFO: You may receive the company's own presentation/PDF as an attached document below — treat it as your MOST reliable source (it's the material Omer collected directly from the company). Combine it with web search for anything the presentation doesn't cover. If you can't find something anywhere, keep the existing value.
+Company: ${co.name}
+Website: ${co.website||'unknown — try to find it'}
+Existing description: ${co.desc||'—'}
+Existing raised/funding: ${co.raised||'—'}
+Existing category: ${co.category||'—'}
+Existing key clients: ${co.clients||'—'}
+
+TASK 2 — SUGGEST POTENTIAL CLIENTS: From the NETWORK list below ONLY (do not invent people who aren't listed), pick the 3-5 best-fit people/companies for Omer to reach out to RIGHT NOW as potential clients or intro paths for ${co.name}, based on their role/company/geo fit with what ${co.name} sells (use the presentation/website content to understand what they actually sell before matching).
+NETWORK:
+${peopleSummary}
+
+Respond with ONLY raw JSON, no markdown, no commentary:
+{"description":"1-2 sentence up-to-date description","raised":"funding summary or existing value","category":"short category/vertical","clients":"comma-separated key clients","leads":[{"name":"...","reason":"1-2 sentences why they fit right now","action":"specific next step for Omer"}]}`;
+
+      // Attach the company's uploaded presentation(s)/PDF(s) as document content, if any
+      const pdfs=getPdfs(co.id);
+      const pdfBlocks=[];
+      let unreadableCount=0;
+      pdfs.forEach(p=>{
+        const m=/^data:([^;]+);base64,(.+)$/.exec(p.data||'');
+        if(m&&m[1]==='application/pdf'){
+          pdfBlocks.push({type:'document',source:{type:'base64',media_type:'application/pdf',data:m[2]}});
+        }else{
+          unreadableCount++;
+        }
+      });
+      const userText=`Refresh ${co.name} and suggest leads now.`+
+        (pdfBlocks.length?` (${pdfBlocks.length} presentation file(s) attached above — use them.)`:'')+
+        (unreadableCount?` Note: ${unreadableCount} additional attached file(s) are in .ppt/.pptx format and could not be read automatically — base your answer on what's available.`:'');
+      const userContent=pdfBlocks.length?[...pdfBlocks,{type:'text',text:userText}]:userText;
+
+      const res=await fetch(WORKER_URL,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          max_tokens:1500,
+          system:sys,
+          messages:[{role:'user',content:userContent}],
+          tools:[{type:'web_search_20250305',name:'web_search'}]
+        })
+      });
+      const rawText=await res.text();
+      if(!rawText||!rawText.trim())throw new Error('no response');
+      const data=JSON.parse(rawText);
+      if(data.error)throw new Error(JSON.stringify(data.error));
+      const reply=(data.content||[]).map(i=>i.text||'').join('').trim();
+      const clean=reply.replace(/```json|```/g,'').trim();
+      const jsonMatch=clean.match(/\{[\s\S]*\}/);
+      if(!jsonMatch)throw new Error('no JSON in reply');
+      const result=JSON.parse(jsonMatch[0]);
+
+      if(result.description)co.desc=result.description;
+      if(result.raised)co.raised=result.raised;
+      if(result.category)co.category=result.category;
+      if(result.clients)co.clients=result.clients;
+      co.suggestedLeads=Array.isArray(result.leads)?result.leads.slice(0,5):[];
+      co.lastSynced=Date.now();
+
+      if(statusEl){statusEl.textContent=`✅ עודכן${co.suggestedLeads.length?` · ${co.suggestedLeads.length} לידים`:''}`;statusEl.style.color='var(--green)';}
+      okCount++;
+    }catch(e){
+      console.error('AI Sync error for',co.name,e);
+      if(statusEl){statusEl.textContent='⚠️ שגיאה';statusEl.style.color='var(--red)';}
+      errCount++;
+    }
+  }
+
+  save();
+  renderCompanies();
+  notif(`🪄 AI Sync הושלם — ${okCount} עודכנו${errCount?`, ${errCount} שגיאות`:''}`);
+}
 
 // ============================================================
 // NAV
@@ -2055,8 +2170,25 @@ function openCompanyModal(coId){
 
     <hr/>
     ${co.clients&&co.clients!=='—'?`<div class="msec"><div class="msec-title">Key Clients</div><div style="font-size:12px;color:var(--muted);">${co.clients}</div></div>`:''}
+    ${co.lastSynced?`<div style="font-size:10px;color:var(--muted);margin-top:-6px;margin-bottom:8px;">🪄 עודכן לאחרונה ע"י AI Sync: ${new Date(co.lastSynced).toLocaleString('he-IL')}</div>`:''}
 
     <hr/>
+
+    <!-- SUGGESTED LEADS FROM AI SYNC -->
+    ${co.suggestedLeads&&co.suggestedLeads.length?`
+    <div class="msec">
+      <div class="msec-title">🎯 לקוחות פוטנציאליים לפנייה עכשיו</div>
+      ${co.suggestedLeads.map((lead,idx)=>`
+        <div style="padding:10px 12px;background:var(--surf2);border:1px solid var(--border);border-radius:8px;margin-bottom:8px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <span style="font-size:13px;font-weight:700;">${lead.name}</span>
+            <button class="btn btn-green btn-xs" onclick="addSuggestedLead('${co.id}',${idx})">+ Add as Client</button>
+          </div>
+          ${lead.reason?`<div style="font-size:11px;color:var(--muted);margin-top:4px;">${lead.reason}</div>`:''}
+          ${lead.action?`<div style="font-size:11px;color:var(--accent);margin-top:4px;">➜ ${lead.action}</div>`:''}
+        </div>`).join('')}
+    </div>
+    <hr/>`:''}
 
     <!-- COMMISSION TREE -->
     <div class="msec">
@@ -2567,6 +2699,22 @@ function renderCoPanel(p,co,i){
 }
 
 // Client Stages
+
+function addSuggestedLead(coId,idx){
+  const co=COMPANIES.find(c=>c.id===coId);if(!co)return;
+  const lead=(co.suggestedLeads||[])[idx];if(!lead)return;
+  closeOverlay('main-overlay');
+  nav('clients');
+  setTimeout(()=>{
+    openAddClient();
+    setTimeout(()=>{
+      const nameEl=document.getElementById('nc-name');
+      const coEl=document.getElementById('nc-co');
+      if(nameEl)nameEl.value=lead.name;
+      if(coEl)coEl.value=co.name;
+    },100);
+  },100);
+}
 
 function openAddClientFor(co,pid){
   openAddClient();
